@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# nuxt build output
+.nuxt/
+.output/
+.data/
+dist/
+
+# logs
+*.log
+logs/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# os / editor noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# machine-specific Claude settings (keep launch.json shared)
+.claude/settings.local.json
