@@ -6,6 +6,7 @@ import {
   fmtN, pct, EVENTS_META
 } from '~/utils/campaignAnalytics'
 
+const t = useT()
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 
@@ -23,20 +24,20 @@ if (meta.value.status === 'draft') {
 
 const statusBadge = computed(() => {
   switch (meta.value.status) {
-    case 'published': return { label: 'On sale', color: 'success' as const, variant: 'subtle' as const }
-    case 'draft': return { label: 'Draft', color: 'neutral' as const, variant: 'subtle' as const }
-    case 'completed': return { label: 'Completed', color: 'neutral' as const, variant: 'outline' as const }
-    case 'cancelled': return { label: 'Cancelled', color: 'error' as const, variant: 'subtle' as const }
+    case 'published': return { label: t('workspace.status.onSale'), color: 'success' as const, variant: 'subtle' as const }
+    case 'draft': return { label: t('workspace.status.draft'), color: 'neutral' as const, variant: 'subtle' as const }
+    case 'completed': return { label: t('workspace.status.completed'), color: 'neutral' as const, variant: 'outline' as const }
+    case 'cancelled': return { label: t('workspace.status.cancelled'), color: 'error' as const, variant: 'subtle' as const }
   }
 })
 
 /* ——— workspace nav ——— */
 const tab = ref('overview')
-const tabs = [
-  { label: 'Overview', value: 'overview' },
-  { label: 'Sales', value: 'sales' },
-  { label: 'Marketing', value: 'marketing' }
-]
+const tabs = computed(() => [
+  { label: t('workspace.tabs.overview'), value: 'overview' },
+  { label: t('workspace.tabs.sales'), value: 'sales' },
+  { label: t('workspace.tabs.marketing'), value: 'marketing' }
+])
 
 /* ——— analytics data ——— */
 const campaignList = useCampaigns()
@@ -67,11 +68,11 @@ const coverage = computed(() => {
 
 /* period filter — placement per the PoC doc; static data in the prototype */
 const period = ref('all')
-const periodItems = [
-  { label: 'All time', value: 'all' },
-  { label: 'Last 30 days', value: '30d' },
-  { label: 'Last 7 days', value: '7d' }
-]
+const periodItems = computed(() => [
+  { label: t('workspace.period.all'), value: 'all' },
+  { label: t('workspace.period.last30'), value: '30d' },
+  { label: t('workspace.period.last7'), value: '7d' }
+])
 
 /* ——— sortable campaign table ——— */
 const UButton = resolveComponent('UButton')
@@ -96,22 +97,22 @@ const sortHeader = (label: string) => ({ column }: any) =>
 const numCell = (key: 'viewed' | 'initiated' | 'purchased') => ({ row }: any) =>
   h('span', { class: 'block tabular-nums ' + (row.original[key] === 0 ? 'text-dimmed' : 'text-default') }, fmtN(row.original[key]))
 
-const columns: TableColumn<CampaignRow>[] = [
+const columns = computed<TableColumn<CampaignRow>[]>(() => [
   {
     accessorKey: 'name',
-    header: 'Campaign',
+    header: t('workspace.colName'),
     cell: ({ row }) => h('span', { class: 'flex items-center gap-2.5 font-medium text-highlighted' }, [
       h('span', { class: `size-2.5 rounded-full shrink-0 ${chartColor(row.original.colorIdx).dot}` }),
       row.original.name
     ])
   },
-  { accessorKey: 'viewed', header: sortHeader('Viewed'), cell: numCell('viewed') },
-  { accessorKey: 'initiated', header: sortHeader('Initiated checkout'), cell: numCell('initiated') },
-  { accessorKey: 'purchased', header: sortHeader('Purchased'), cell: numCell('purchased') },
+  { accessorKey: 'viewed', header: sortHeader(t('workspace.colViewed')), cell: numCell('viewed') },
+  { accessorKey: 'initiated', header: sortHeader(t('workspace.colInitiated')), cell: numCell('initiated') },
+  { accessorKey: 'purchased', header: sortHeader(t('workspace.colPurchased')), cell: numCell('purchased') },
   {
     id: 'conversion',
     accessorFn: (r: CampaignRow) => r.viewed ? r.purchased / r.viewed : 0,
-    header: sortHeader('Conv.'),
+    header: sortHeader(t('workspace.colConversion')),
     cell: ({ row }) => h(UBadge, {
       label: pct(row.original.purchased, row.original.viewed),
       color: 'neutral',
@@ -121,10 +122,10 @@ const columns: TableColumn<CampaignRow>[] = [
   },
   {
     id: 'open',
-    header: () => h('span', { class: 'sr-only' }, 'Open'),
+    header: () => h('span', { class: 'sr-only' }, t('workspace.colOpen')),
     cell: () => h(UIcon, { name: 'i-lucide-chevron-right', class: 'size-4 text-dimmed block' })
   }
-]
+])
 
 const openCampaign = (_e: Event, row: any) => {
   navigateTo(`/events/${slug.value}/campaigns/${row.original.id}`)
@@ -147,8 +148,8 @@ const createCampaign = () => {
   campaignModal.value = false
   newCampaignName.value = ''
   toast.add({
-    title: 'Campaign created',
-    description: 'Now add tracking links and share them.',
+    title: t('workspace.toastCreatedTitle'),
+    description: t('workspace.toastCreatedDesc'),
     icon: 'i-lucide-megaphone',
     color: 'success'
   })
@@ -163,7 +164,7 @@ const createCampaign = () => {
     <UContainer class="max-w-6xl pb-24">
       <UBreadcrumb
         :items="[
-          { label: 'Events', icon: 'i-lucide-ticket', to: '/' },
+          { label: t('workspace.breadcrumbEvents'), icon: 'i-lucide-ticket', to: '/' },
           { label: meta.title }
         ]"
         class="pt-6"
@@ -191,13 +192,13 @@ const createCampaign = () => {
       <div v-if="tab === 'marketing'" class="flex flex-col gap-6">
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 class="text-lg font-semibold text-highlighted">Campaign analytics</h2>
-            <p class="text-sm text-muted mt-0.5">Where your buyers came from — every tracked link, rolled up.</p>
+            <h2 class="text-lg font-semibold text-highlighted">{{ t('workspace.analyticsTitle') }}</h2>
+            <p class="text-sm text-muted mt-0.5">{{ t('workspace.analyticsDesc') }}</p>
           </div>
           <div class="flex items-center gap-4">
             <p v-if="coverage" class="text-sm text-muted">
               <span class="font-semibold text-highlighted tabular-nums">{{ fmtN(coverage.attributed) }}</span>
-              of {{ fmtN(coverage.sold) }} sales attributed ·
+              {{ t('workspace.coverageSuffix', { sold: fmtN(coverage.sold) }) }}
               <UBadge :label="coverage.pct" color="success" variant="subtle" size="sm" />
             </p>
             <USelect v-model="period" :items="periodItems" size="sm" class="w-36" />
@@ -209,10 +210,10 @@ const createCampaign = () => {
         <UPageCard variant="outline">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p class="text-base font-semibold text-highlighted">Campaigns</p>
-              <p class="text-[15px] text-muted mt-1">Click a column to sort, click a campaign to drill into its links.</p>
+              <p class="text-base font-semibold text-highlighted">{{ t('workspace.campaignsTitle') }}</p>
+              <p class="text-[15px] text-muted mt-1">{{ t('workspace.campaignsHint') }}</p>
             </div>
-            <UButton label="New campaign" icon="i-lucide-plus" size="sm" @click="campaignModal = true" />
+            <UButton :label="t('workspace.newCampaign')" icon="i-lucide-plus" size="sm" @click="campaignModal = true" />
           </div>
 
           <UTable
@@ -226,11 +227,11 @@ const createCampaign = () => {
         </UPageCard>
 
         <div class="grid sm:grid-cols-2 gap-6">
-          <UPageCard variant="outline" title="Traffic by campaign" description="Where your audience's attention comes from.">
-            <DonutChart :items="trafficItems" center-label="Viewed" class="mt-3" />
+          <UPageCard variant="outline" :title="t('workspace.trafficTitle')" :description="t('workspace.trafficDesc')">
+            <DonutChart :items="trafficItems" :center-label="t('workspace.trafficCenter')" class="mt-3" />
           </UPageCard>
-          <UPageCard variant="outline" title="Sales by campaign" description="Where your actual ticket sales come from.">
-            <DonutChart :items="salesItems" center-label="Purchased" class="mt-3" />
+          <UPageCard variant="outline" :title="t('workspace.salesTitle')" :description="t('workspace.salesDesc')">
+            <DonutChart :items="salesItems" :center-label="t('workspace.salesCenter')" class="mt-3" />
           </UPageCard>
         </div>
       </div>
@@ -247,14 +248,14 @@ const createCampaign = () => {
     <!-- ════ new campaign modal ════ -->
     <UModal
       v-model:open="campaignModal"
-      title="New campaign"
-      description="A named bucket that groups tracking links — one promotional effort."
+      :title="t('workspace.modalTitle')"
+      :description="t('workspace.modalDesc')"
     >
       <template #body>
-        <UFormField label="Campaign name" required help="Shown in reports exactly as typed.">
+        <UFormField :label="t('workspace.nameLabel')" required :help="t('workspace.nameHelp')">
           <UInput
             v-model="newCampaignName"
-            placeholder="Instagram — May post"
+            :placeholder="t('workspace.namePlaceholder')"
             class="w-full"
             autofocus
             @keyup.enter="createCampaign"
@@ -263,9 +264,9 @@ const createCampaign = () => {
       </template>
       <template #footer="{ close }">
         <div class="flex w-full justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
+          <UButton :label="t('workspace.cancel')" color="neutral" variant="ghost" @click="close" />
           <UButton
-            label="Create campaign"
+            :label="t('workspace.createCampaign')"
             color="primary"
             :disabled="!newCampaignName.trim()"
             @click="createCampaign"

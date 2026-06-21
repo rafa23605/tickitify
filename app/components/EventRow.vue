@@ -12,10 +12,15 @@ export interface AdminEvent {
   sold?: number
   capacity?: number
   revenue?: string
-  note?: string
+  note?: { k: string, n: number }
 }
 
 const props = defineProps<{ event: AdminEvent }>()
+const t = useT()
+
+const noteText = computed(() =>
+  props.event.note ? t(`events.${props.event.note.k}`, { n: props.event.note.n }) : ''
+)
 
 /** a draft is an unfinished event — open it in the creation wizard, not the workspace */
 const target = computed(() =>
@@ -26,10 +31,10 @@ const target = computed(() =>
 
 const badge = computed(() => {
   switch (props.event.status) {
-    case 'published': return { label: 'Published', color: 'success' as const, variant: 'subtle' as const }
-    case 'draft': return { label: 'Draft', color: 'neutral' as const, variant: 'subtle' as const }
-    case 'completed': return { label: 'Completed', color: 'neutral' as const, variant: 'outline' as const }
-    case 'cancelled': return { label: 'Cancelled', color: 'error' as const, variant: 'subtle' as const }
+    case 'published': return { label: t('events.status.published'), color: 'success' as const, variant: 'subtle' as const }
+    case 'draft': return { label: t('events.status.draft'), color: 'neutral' as const, variant: 'subtle' as const }
+    case 'completed': return { label: t('events.status.completed'), color: 'neutral' as const, variant: 'outline' as const }
+    case 'cancelled': return { label: t('events.status.cancelled'), color: 'error' as const, variant: 'subtle' as const }
   }
 })
 
@@ -56,7 +61,7 @@ const fmt = (n: number) => n.toLocaleString('cs-CZ')
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2.5">
           <UBadge v-bind="badge" size="sm" />
-          <span v-if="event.status === 'draft' && event.note" class="text-xs text-dimmed">{{ event.note }}</span>
+          <span v-if="event.status === 'draft' && event.note" class="text-xs text-dimmed">{{ noteText }}</span>
         </div>
         <p class="text-[15px] font-semibold text-highlighted truncate mt-1.5">{{ event.title }}</p>
         <p class="flex items-center gap-1.5 text-sm text-muted truncate mt-0.5">
@@ -78,7 +83,7 @@ const fmt = (n: number) => n.toLocaleString('cs-CZ')
         </template>
 
         <template v-else-if="event.status === 'draft'">
-          <p class="text-sm font-medium text-primary">Continue setup</p>
+          <p class="text-sm font-medium text-primary">{{ t('events.continueSetup') }}</p>
         </template>
 
         <template v-else-if="event.status === 'completed'">
@@ -86,7 +91,7 @@ const fmt = (n: number) => n.toLocaleString('cs-CZ')
         </template>
 
         <template v-else>
-          <p class="text-sm text-muted">{{ event.note }}</p>
+          <p class="text-sm text-muted">{{ noteText }}</p>
         </template>
       </div>
 
