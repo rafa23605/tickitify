@@ -53,8 +53,11 @@ const numCell = (key: 'viewed' | 'initiated' | 'purchased') => ({ row }: any) =>
 const columns: TableColumn<TrackedLink>[] = [
   {
     accessorKey: 'label',
-    header: 'Link',
-    cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.label)
+    header: 'Tracking link',
+    cell: ({ row }) => h('div', { class: 'flex flex-col gap-0.5 min-w-0' }, [
+      h('span', { class: 'font-medium text-highlighted' }, row.original.label),
+      h('span', { class: 'font-mono text-xs text-dimmed truncate max-w-[340px]' }, trackingUrl(slug.value, campaign.value.id, row.original).replace(/^https:\/\//, ''))
+    ])
   },
   {
     accessorKey: 'source',
@@ -73,9 +76,10 @@ const columns: TableColumn<TrackedLink>[] = [
     id: 'copy',
     header: () => h('span', { class: 'sr-only' }, 'Copy'),
     cell: ({ row }) => h(UButton, {
+      'label': 'Copy link',
       'icon': 'i-lucide-copy',
       'color': 'neutral',
-      'variant': 'ghost',
+      'variant': 'subtle',
       'size': 'xs',
       'aria-label': 'Copy tracking link',
       'onClick': (e: Event) => {

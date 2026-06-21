@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const props = defineProps<{
   title: string
+  description: string
   dateLabel: string
   venueLabel: string
-  coverUrl: string | null
   minPrice: number | null
 }>()
 
@@ -20,20 +20,6 @@ const priceLabel = computed(() =>
     </p>
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }" class="overflow-hidden">
-      <!-- cover -->
-      <div class="aspect-video bg-elevated relative">
-        <img
-          v-if="coverUrl"
-          :src="coverUrl"
-          alt=""
-          class="absolute inset-0 size-full object-cover"
-        >
-        <div v-else class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-dimmed">
-          <UIcon name="i-lucide-image" class="size-6" />
-          <span class="text-xs">Cover appears when you pick a venue</span>
-        </div>
-      </div>
-
       <div class="p-4 flex flex-col gap-1.5">
         <p v-if="dateLabel" class="text-xs font-medium text-primary tabular-nums">{{ dateLabel }}</p>
         <USkeleton v-else class="h-3.5 w-28" />
@@ -46,6 +32,8 @@ const priceLabel = computed(() =>
           {{ venueLabel }}
         </p>
         <USkeleton v-else class="h-3.5 w-1/2" />
+
+        <p v-if="description" class="text-sm text-muted line-clamp-2 mt-0.5">{{ description }}</p>
 
         <USeparator class="my-2.5" />
 

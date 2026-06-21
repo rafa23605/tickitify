@@ -5,6 +5,12 @@ import type { SeatingSector, SeatStyle } from '~/components/SeatMapEditor.vue'
 useHead({ title: 'Create event · Tickitify' })
 
 const toast = useToast()
+const route = useRoute()
+
+/* ——— draft context: a draft row opens the wizard to resume / delete it ——— */
+const adminEvents = useAdminEvents()
+const draftSlug = computed(() => (route.query.draft ? String(route.query.draft) : null))
+const draftEvent = computed(() => (draftSlug.value ? adminEvents.value.find(e => e.slug === draftSlug.value) : null))
 
 /* ——— ops-seeded venue master data: halls across Czechia (organizers never create venues) ——— */
 interface StandingSector { id: string, name: string, max: number }
@@ -58,7 +64,6 @@ const form = reactive({
   endTime: null as any,
   venueId: '',
   sectorsSelected: [] as string[],
-  coverFile: null as File | null,
   types: [{ id: 't1', name: '', price: null }] as TicketType[],
   /** seatKey -> typeId */
   seatAssignments: {} as Record<string, string>,
@@ -70,33 +75,14 @@ const venue = computed(() => venues.find(v => v.id === form.venueId))
 const selectedSeating = computed(() => venue.value?.seating.filter(s => form.sectorsSelected.includes(s.id)) ?? [])
 const selectedStanding = computed(() => venue.value?.standing.filter(s => form.sectorsSelected.includes(s.id)) ?? [])
 
+/* every sector of the chosen venue is available by default — availability is
+   controlled later by assigning ticket types on Seat Assignment */
 watch(() => form.venueId, () => {
-  form.sectorsSelected = []
+  const v = venues.find(x => x.id === form.venueId)
+  form.sectorsSelected = v ? [...v.seating, ...v.standing].map(s => s.id) : []
   form.seatAssignments = {}
   form.standingConfig = {}
-  form.coverFile = null
 })
-
-const toggleSector = (id: string) => {
-  if (form.sectorsSelected.includes(id)) {
-    form.sectorsSelected = form.sectorsSelected.filter(s => s !== id)
-    for (const key of Object.keys(form.seatAssignments)) {
-      if (key.startsWith(id + ':')) delete form.seatAssignments[key]
-    }
-    delete form.standingConfig[id]
-  } else {
-    form.sectorsSelected = [...form.sectorsSelected, id]
-  }
-}
-
-/* ——— cover: venue photo with organizer-upload fallback ——— */
-const coverObjectUrl = ref<string | null>(null)
-watch(() => form.coverFile, (file, _, onCleanup) => {
-  if (coverObjectUrl.value) URL.revokeObjectURL(coverObjectUrl.value)
-  coverObjectUrl.value = file ? URL.createObjectURL(file) : null
-  onCleanup(() => { if (coverObjectUrl.value) URL.revokeObjectURL(coverObjectUrl.value) })
-})
-const coverUrl = computed(() => venue.value ? (venue.value.photo ?? coverObjectUrl.value) : null)
 
 /* ——— ticket types ——— */
 let typeSeq = 1
@@ -174,7 +160,7 @@ const clearSelection = () => {
 }
 
 watch(step, (s) => {
-  if (s === 3) {
+  if (s === 2) {
     if (!form.sectorsSelected.includes(activeSectorId.value)) {
       activeSectorId.value = form.sectorsSelected[0] ?? ''
     }
@@ -277,13 +263,15 @@ const standingTotal = computed(() =>
 
 const stepValid = computed(() => {
   switch (step.value) {
-    case 0: return !!(form.title.trim() && form.startDate && form.startTime && form.endDate && form.endTime)
-    case 1: return !!form.venueId && form.sectorsSelected.length > 0 && !!coverUrl.value
-    case 2: return validTypes.value.length > 0 && incompleteCount.value === 0
-    case 3: {
+    case 0: return !!(form.title.trim() && form.venueId && form.startDate && form.startTime && form.endDate && form.endTime)
+    case 1: return validTypes.value.length > 0 && incompleteCount.value === 0
+    case 2: {
+      // an untouched standing zone is a private hold (skipped); once an organizer
+      // starts configuring one (sets a type or a capacity) it must be fully valid
       const standingOk = selectedStanding.value.every((z) => {
         const cfg = form.standingConfig[z.id]
-        return cfg?.typeId && cfg.capacity && cfg.capacity > 0 && cfg.capacity <= z.max
+        if (!cfg || (!cfg.typeId && !cfg.capacity)) return true
+        return !!cfg.typeId && !!cfg.capacity && cfg.capacity > 0 && cfg.capacity <= z.max
       })
       return standingOk && (seatedTotal.value + standingTotal.value > 0)
     }
@@ -294,22 +282,13 @@ const stepValid = computed(() => {
 const kycVerified = true // mock: Stripe Connect onboarding completed
 
 const preflight = computed(() => [
-  { ok: !!(form.title.trim() && form.startDate && form.endDate), label: 'Event details complete' },
-  { ok: !!form.venueId && form.sectorsSelected.length > 0, label: 'Venue and sectors selected' },
+  { ok: !!(form.title.trim() && form.venueId && form.startDate && form.endDate), label: 'Event details complete' },
   { ok: validTypes.value.length > 0, label: `At least one ticket type (${validTypes.value.length} defined)` },
   { ok: seatedTotal.value + standingTotal.value > 0, label: `Seats or standing capacity assigned (${seatedTotal.value.toLocaleString('cs-CZ')} · ${standingTotal.value.toLocaleString('cs-CZ')})` },
   { ok: kycVerified, label: 'Organizer payout verification complete' }
 ])
 
 const canPublish = computed(() => preflight.value.every(c => c.ok))
-
-const estGross = computed(() => {
-  let sum = 0
-  for (const t of validTypes.value) {
-    sum += (seatedCount(t.id) + standingCapByType(t.id)) * (t.price ?? 0)
-  }
-  return sum
-})
 
 /* ——— labels ——— */
 const WEEKDAYS_CS = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so']
@@ -349,22 +328,57 @@ const copyUrl = async () => {
 /* ——— navigation ——— */
 const steps = computed(() => [
   { title: 'Details', icon: 'i-lucide-file-text', disabled: maxVisited.value < 0 },
-  { title: 'Venue + Sectors', icon: 'i-lucide-building-2', disabled: maxVisited.value < 1 },
-  { title: 'Ticket Types', icon: 'i-lucide-tags', disabled: maxVisited.value < 2 },
-  { title: 'Seat Assignment', icon: 'i-lucide-armchair', disabled: maxVisited.value < 3 },
-  { title: 'Publish', icon: 'i-lucide-rocket', disabled: maxVisited.value < 4 }
+  { title: 'Ticket Types', icon: 'i-lucide-tags', disabled: maxVisited.value < 1 },
+  { title: 'Seat Assignment', icon: 'i-lucide-armchair', disabled: maxVisited.value < 2 },
+  { title: 'Publish', icon: 'i-lucide-rocket', disabled: maxVisited.value < 3 }
 ])
 
 const next = () => {
-  if (step.value < 4) {
+  if (step.value < 3) {
     step.value++
     maxVisited.value = Math.max(maxVisited.value, step.value)
   }
 }
-const back = () => {
-  if (step.value === 0) navigateTo('/')
-  else step.value--
+
+/* ——— leaving the wizard ——— */
+const discardOpen = ref(false)
+const leaveWizard = () => {
+  discardOpen.value = false
+  navigateTo('/')
 }
+/* on step 1 nothing is saved yet → confirm discard;
+   step 2+ (or an existing draft) is already saved → leave with a toast */
+const requestClose = () => {
+  if (draftSlug.value) {
+    toast.add({ title: 'Saved to drafts', icon: 'i-lucide-save', color: 'neutral' })
+    navigateTo('/')
+  } else if (step.value === 0) {
+    discardOpen.value = true
+  } else {
+    toast.add({ title: 'Saved to drafts', icon: 'i-lucide-save', color: 'neutral' })
+    navigateTo('/')
+  }
+}
+const back = () => {
+  if (step.value > 0) step.value--
+  else if (draftSlug.value) navigateTo('/')
+  else discardOpen.value = true
+}
+
+const deleteDraftOpen = ref(false)
+const confirmDeleteDraft = () => {
+  if (!draftSlug.value) return
+  const title = draftEvent.value?.title
+  adminEvents.value = adminEvents.value.filter(e => e.slug !== draftSlug.value)
+  deleteDraftOpen.value = false
+  toast.add({ title: 'Draft deleted', description: title ? `"${title}" was removed.` : undefined, icon: 'i-lucide-trash-2', color: 'neutral' })
+  navigateTo('/')
+}
+
+/* prefill the title so the organizer sees which draft they're resuming */
+onMounted(() => {
+  if (draftEvent.value) form.title = draftEvent.value.title
+})
 const goTo = (s: number) => { step.value = s }
 
 const publish = () => {
@@ -382,7 +396,6 @@ const prefill = () => {
   form.endTime = new Time(21, 30)
   form.venueId = 'kralovka'
   nextTick(() => {
-    form.sectorsSelected = ['kr-a', 'kr-b', 'kr-south', 'kr-balc', 'kr-floor']
     form.types = [
       { id: 't1', name: 'VIP', price: 800 },
       { id: 't2', name: 'Standard', price: 400 },
@@ -419,55 +432,54 @@ const prefill = () => {
     <UContainer class="max-w-6xl pb-24">
       <UPageHeader
         headline="Events"
-        title="Create event"
-        description="Set up a new ticketed event for your storefront."
+        :title="draftSlug ? 'Continue setup' : 'Create event'"
+        :description="draftSlug ? 'Finish setting up your draft — it stays saved until you publish.' : 'Set up a new ticketed event for your storefront.'"
         :ui="{ root: 'border-none py-8' }"
-      />
+      >
+        <template #links>
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            square
+            aria-label="Close"
+            @click="requestClose"
+          />
+        </template>
+      </UPageHeader>
 
       <UStepper v-model="step" :items="steps" size="sm" class="w-full mb-8" />
 
       <!-- ════ Step 1 · Details ════ -->
       <div v-if="step === 0" class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
-        <UPageCard variant="outline">
-          <div class="flex flex-col gap-6">
-            <UFormField label="Event title" required help="Shown on the storefront and on tickets.">
-              <UInput v-model="form.title" size="lg" placeholder="Czech Volleyball Cup 2026" class="w-full" />
-            </UFormField>
-
-            <UFormField label="Description">
-              <UTextarea v-model="form.description" :rows="4" placeholder="What should buyers know about this event?" class="w-full" />
-            </UFormField>
-
-            <div class="grid sm:grid-cols-2 gap-6">
-              <UFormField label="Starts" required help="Dates are locked after publishing.">
-                <div class="flex gap-2">
-                  <UInputDate v-model="form.startDate" locale="cs-CZ" class="flex-1" />
-                  <UInputTime v-model="form.startTime" locale="cs-CZ" class="w-24" />
-                </div>
-              </UFormField>
-              <UFormField label="Ends" required>
-                <div class="flex gap-2">
-                  <UInputDate v-model="form.endDate" locale="cs-CZ" class="flex-1" />
-                  <UInputTime v-model="form.endTime" locale="cs-CZ" class="w-24" />
-                </div>
-              </UFormField>
-            </div>
-          </div>
-        </UPageCard>
-
-        <EventPreviewCard
-          class="lg:sticky lg:top-24"
-          :title="form.title"
-          :date-label="dateLabel"
-          :venue-label="venue ? `${venue.name} · ${venue.city}` : ''"
-          :cover-url="coverUrl"
-          :min-price="minPrice"
-        />
-      </div>
-
-      <!-- ════ Step 2 · Venue + Sectors ════ -->
-      <div v-else-if="step === 1" class="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
         <div class="flex flex-col gap-6 min-w-0">
+          <UPageCard variant="outline">
+            <div class="flex flex-col gap-6">
+              <UFormField label="Event title" required help="Shown on the storefront and on tickets.">
+                <UInput v-model="form.title" size="lg" placeholder="Czech Volleyball Cup 2026" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Description">
+                <UTextarea v-model="form.description" :rows="4" placeholder="What should buyers know about this event?" class="w-full" />
+              </UFormField>
+
+              <div class="grid sm:grid-cols-2 gap-6">
+                <UFormField label="Starts" required help="Dates are locked after publishing.">
+                  <div class="flex gap-2">
+                    <UInputDate v-model="form.startDate" locale="cs-CZ" class="flex-1" />
+                    <UInputTime v-model="form.startTime" locale="cs-CZ" class="w-24" />
+                  </div>
+                </UFormField>
+                <UFormField label="Ends" required>
+                  <div class="flex gap-2">
+                    <UInputDate v-model="form.endDate" locale="cs-CZ" class="flex-1" />
+                    <UInputTime v-model="form.endTime" locale="cs-CZ" class="w-24" />
+                  </div>
+                </UFormField>
+              </div>
+            </div>
+          </UPageCard>
+
           <UPageCard
             variant="outline"
             title="Venue"
@@ -485,121 +497,28 @@ const prefill = () => {
               />
             </UFormField>
 
-            <div v-if="venue" class="flex items-start gap-4 mt-5 rounded-lg bg-elevated/50 p-3.5">
-              <div class="w-36 shrink-0 aspect-video rounded-md bg-elevated overflow-hidden relative">
-                <img v-if="coverUrl" :src="coverUrl" alt="" class="absolute inset-0 size-full object-cover">
-                <div v-else class="absolute inset-0 flex items-center justify-center text-dimmed">
-                  <UIcon name="i-lucide-image-off" class="size-5" />
-                </div>
-              </div>
+            <div v-if="venue" class="flex items-start gap-3 mt-5 rounded-lg bg-elevated/50 p-3.5">
+              <UIcon name="i-lucide-building-2" class="size-5 shrink-0 text-dimmed mt-0.5" />
               <div class="min-w-0">
                 <p class="font-medium text-highlighted">{{ venue.name }}</p>
                 <p class="text-sm text-muted mt-0.5">{{ venue.address }} · capacity {{ venueCapacity(venue).toLocaleString('cs-CZ') }}</p>
-                <p v-if="venue.photo" class="flex items-center gap-1.5 text-xs text-success mt-2">
-                  <UIcon name="i-lucide-check" class="size-3.5" />
-                  Cover photo added automatically from our venue library
-                </p>
               </div>
             </div>
-
-            <UAlert
-              v-if="venue && !venue.photo && !form.coverFile"
-              color="warning"
-              variant="subtle"
-              icon="i-lucide-image-off"
-              title="No photo for this venue yet"
-              description="Add a cover so buyers see what to expect. We'll keep it for next time."
-              class="mt-4"
-            />
-            <UFormField v-if="venue && !venue.photo" label="Event cover" :required="!form.coverFile" class="mt-3" help="16:9 works best — this is how the event appears to buyers.">
-              <UFileUpload
-                v-model="form.coverFile"
-                accept="image/*"
-                icon="i-lucide-image-plus"
-                label="Drop a cover image here"
-                description="or click to browse · PNG, JPG"
-                class="w-full max-w-md aspect-video"
-              />
-            </UFormField>
-          </UPageCard>
-
-          <UPageCard
-            v-if="venue"
-            variant="outline"
-            title="Sectors"
-            description="Choose which sectors are available for this event."
-          >
-            <div class="flex flex-col gap-2.5 mt-2">
-              <button
-                v-for="s in [...venue.seating, ...venue.standing]"
-                :key="s.id"
-                type="button"
-                class="flex items-center gap-3 rounded-lg p-3.5 ring text-left transition"
-                :class="form.sectorsSelected.includes(s.id)
-                  ? 'ring-2 ring-primary bg-primary/5'
-                  : 'ring-default bg-elevated/50 hover:bg-elevated hover:ring-accented'"
-                @click="toggleSector(s.id)"
-              >
-                <UCheckbox :model-value="form.sectorsSelected.includes(s.id)" tabindex="-1" class="pointer-events-none" />
-                <span class="flex-1 min-w-0">
-                  <span class="block text-sm font-medium text-highlighted">{{ s.name }}</span>
-                  <span class="block text-xs text-muted mt-0.5">
-                    {{ 'rows' in s ? `${s.rows * s.seats} seats · ${s.rows} rows × ${s.seats}` : `up to ${s.max.toLocaleString('cs-CZ')} people` }}
-                  </span>
-                </span>
-                <UBadge
-                  :label="'rows' in s ? 'Seating' : 'Standing'"
-                  :color="'rows' in s ? 'neutral' : 'info'"
-                  variant="subtle"
-                  size="sm"
-                />
-              </button>
-            </div>
           </UPageCard>
         </div>
 
-        <div v-if="venue" class="flex flex-col gap-6 lg:sticky lg:top-24">
-          <UPageCard variant="outline" title="Venue map" description="Selected sectors highlighted — click to toggle.">
-            <VenueMap
-              class="mt-3"
-              :seating="venue.seating"
-              :standing="venue.standing"
-              :selected="form.sectorsSelected"
-              @toggle="toggleSector"
-            />
-          </UPageCard>
-
-          <UPageCard variant="outline" title="Selection summary">
-            <div class="flex flex-col gap-1.5 mt-1 text-sm text-muted">
-              <p>
-                <span class="font-semibold text-highlighted tabular-nums">{{ selectedSeating.length }}</span>
-                seating {{ selectedSeating.length === 1 ? 'sector' : 'sectors' }} ·
-                <span class="font-semibold text-highlighted tabular-nums">{{ selectedSeating.reduce((n, s) => n + s.rows * s.seats, 0).toLocaleString('cs-CZ') }}</span>
-                seats
-              </p>
-              <p>
-                <span class="font-semibold text-highlighted tabular-nums">{{ selectedStanding.length }}</span>
-                standing {{ selectedStanding.length === 1 ? 'sector' : 'sectors' }} ·
-                up to
-                <span class="font-semibold text-highlighted tabular-nums">{{ selectedStanding.reduce((n, s) => n + s.max, 0).toLocaleString('cs-CZ') }}</span>
-                people
-              </p>
-            </div>
-          </UPageCard>
-        </div>
-
-        <UPageCard v-else variant="subtle" class="lg:sticky lg:top-24">
-          <UEmpty
-            icon="i-lucide-map"
-            title="Venue map"
-            description="Pick a venue to see its sector layout here."
-            variant="naked"
-          />
-        </UPageCard>
+        <EventPreviewCard
+          class="lg:sticky lg:top-24"
+          :title="form.title"
+          :description="form.description"
+          :date-label="dateLabel"
+          :venue-label="venue ? `${venue.name} · ${venue.city}` : ''"
+          :min-price="minPrice"
+        />
       </div>
 
-      <!-- ════ Step 3 · Ticket Types ════ -->
-      <div v-else-if="step === 2" class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+      <!-- ════ Step 2 · Ticket Types ════ -->
+      <div v-else-if="step === 1" class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
         <UPageCard
           variant="outline"
           title="Ticket types"
@@ -610,7 +529,6 @@ const prefill = () => {
             <span class="w-2.5" />
             <span class="flex-1">Ticket type</span>
             <span class="w-36">Price</span>
-            <span class="w-10">CCY</span>
             <span class="w-36">Assigned</span>
             <span class="w-8" />
           </div>
@@ -635,7 +553,6 @@ const prefill = () => {
                 :highlight="rowIssue(t) === 'price'"
                 class="w-36"
               />
-              <span class="w-10 text-sm text-muted">CZK</span>
               <span class="w-36 text-sm tabular-nums" :class="assignedLabel(t.id) ? 'text-default' : 'text-dimmed'">
                 {{ assignedLabel(t.id) ?? '—' }}
               </span>
@@ -678,15 +595,15 @@ const prefill = () => {
             <li class="flex gap-2.5">
               <UIcon name="i-lucide-circle-plus" class="size-4.5 shrink-0 text-dimmed mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-highlighted">Clean pricing</p>
-                <p class="text-sm text-muted">Buyers pay the price you set — no added service fee.</p>
+                <p class="text-sm font-medium text-highlighted">Buyer service fee</p>
+                <p class="text-sm text-muted">A service fee is added at checkout — buyers see the final price before paying.</p>
               </div>
             </li>
             <li class="flex gap-2.5">
               <UIcon name="i-lucide-circle-plus" class="size-4.5 shrink-0 text-dimmed mt-0.5" />
               <div>
                 <p class="text-sm font-medium text-highlighted">Platform commission</p>
-                <p class="text-sm text-muted">7% is deducted from your payout per sold ticket.</p>
+                <p class="text-sm text-muted">7% is deducted from your payout on every sold ticket.</p>
               </div>
             </li>
           </ul>
@@ -710,16 +627,16 @@ const prefill = () => {
         </UPageCard>
       </div>
 
-      <!-- ════ Step 4 · Seat Assignment ════ -->
-      <div v-else-if="step === 3" class="flex flex-col gap-5">
+      <!-- ════ Step 3 · Seat Assignment ════ -->
+      <div v-else-if="step === 2" class="flex flex-col gap-5">
         <UAlert
           color="info"
           variant="subtle"
           icon="i-lucide-info"
-          :title="activeStanding ? 'Standing sectors don\'t use a seat map' : 'Seats must be linked to a ticket type to be sellable'"
+          :title="activeStanding ? 'Standing sectors don\'t use a seat map' : 'Unassigned seats are your private hold'"
           :description="activeStanding
             ? 'Set a sellable capacity and the ticket type sold for entry.'
-            : 'Unassigned seats are hidden on the storefront — there is no separate blocking.'"
+            : 'Seats without a ticket type don\'t appear on your storefront — a simple way to hold seats for press, sponsors or guests. Assign a type when you\'re ready to sell them.'"
         />
 
         <div class="grid lg:grid-cols-[220px_minmax(0,1fr)_300px] gap-5 items-start">
@@ -899,7 +816,7 @@ const prefill = () => {
         </div>
       </div>
 
-      <!-- ════ Step 5 · Publish ════ -->
+      <!-- ════ Step 4 · Publish ════ -->
       <div v-else class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
         <div class="flex flex-col gap-6 min-w-0">
           <!-- event summary -->
@@ -909,10 +826,6 @@ const prefill = () => {
               <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(0)" />
             </div>
             <div class="flex items-start gap-5 mt-4">
-              <div class="w-32 shrink-0 aspect-video rounded-md bg-elevated overflow-hidden relative">
-                <img v-if="coverUrl" :src="coverUrl" alt="" class="absolute inset-0 size-full object-cover">
-                <div v-else class="absolute inset-0 flex items-center justify-center text-xs text-dimmed">cover</div>
-              </div>
               <dl class="flex-1 flex flex-col gap-2.5 text-sm min-w-0">
                 <div class="flex justify-between gap-4">
                   <dt class="text-muted">Title</dt>
@@ -935,7 +848,7 @@ const prefill = () => {
             <UPageCard variant="outline">
               <div class="flex items-center justify-between gap-3">
                 <p class="font-semibold text-highlighted">Venue</p>
-                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(1)" />
+                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(0)" />
               </div>
               <dl class="flex flex-col gap-2.5 text-sm mt-4">
                 <div class="flex justify-between gap-4">
@@ -947,8 +860,11 @@ const prefill = () => {
                   <dd class="font-medium text-highlighted text-right">{{ selectedSeating.length }} seating · {{ selectedStanding.length }} standing</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Capacity</dt>
-                  <dd class="font-medium text-highlighted text-right tabular-nums">{{ (seatedTotal + standingTotal).toLocaleString('cs-CZ') }}</dd>
+                  <dt class="text-muted">Venue capacity</dt>
+                  <dd class="font-medium text-highlighted text-right tabular-nums">
+                    {{ (seatedTotal + standingTotal).toLocaleString('cs-CZ') }}
+                    <span class="text-muted font-normal">· seats + standing</span>
+                  </dd>
                 </div>
               </dl>
             </UPageCard>
@@ -957,7 +873,7 @@ const prefill = () => {
             <UPageCard variant="outline">
               <div class="flex items-center justify-between gap-3">
                 <p class="font-semibold text-highlighted">Ticket types</p>
-                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(2)" />
+                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(1)" />
               </div>
               <ul class="flex flex-col gap-2.5 text-sm mt-4">
                 <li v-for="t in validTypes" :key="t.id" class="flex items-center justify-between gap-4">
@@ -975,7 +891,7 @@ const prefill = () => {
           <UPageCard variant="outline">
             <div class="flex items-center justify-between gap-3">
               <p class="font-semibold text-highlighted">Inventory</p>
-              <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(3)" />
+              <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(2)" />
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
               <div class="rounded-lg ring ring-default p-4">
@@ -1013,48 +929,40 @@ const prefill = () => {
             </ul>
           </UPageCard>
 
-          <UPageCard variant="outline">
-            <div class="flex items-center gap-3">
-              <UAvatar icon="i-lucide-landmark" size="md" />
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-highlighted">Payout · Stripe Connect</p>
-                <p class="text-xs text-muted">KYC verification</p>
-              </div>
-              <UBadge label="Verified" color="success" variant="subtle" size="sm" />
-            </div>
-          </UPageCard>
-
           <UPageCard variant="outline" title="Storefront URL">
             <UFieldGroup class="w-full mt-2">
               <UInput :model-value="storefrontUrl" readonly class="flex-1" />
               <UButton icon="i-lucide-copy" color="neutral" variant="subtle" aria-label="Copy link" @click="copyUrl" />
             </UFieldGroup>
-
-            <USeparator class="my-4" />
-
-            <p class="text-xs text-muted">Estimated gross if sold out</p>
-            <p class="text-2xl font-semibold text-highlighted tabular-nums mt-1">
-              {{ estGross.toLocaleString('cs-CZ') }} CZK
-            </p>
           </UPageCard>
         </div>
       </div>
 
       <!-- ════ footer nav ════ -->
       <div class="flex items-center justify-between mt-8">
-        <UButton
-          :label="step === 0 ? 'Back to events' : 'Back'"
-          icon="i-lucide-arrow-left"
-          color="neutral"
-          variant="ghost"
-          @click="back"
-        />
+        <div class="flex items-center gap-1">
+          <UButton
+            :label="step === 0 ? 'Back to events' : 'Back'"
+            color="neutral"
+            variant="ghost"
+            @click="back"
+          />
+          <UTooltip v-if="draftSlug" text="Delete draft">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              square
+              aria-label="Delete draft"
+              @click="deleteDraftOpen = true"
+            />
+          </UTooltip>
+        </div>
 
         <div class="flex items-center gap-3">
-          <template v-if="step < 4">
+          <template v-if="step < 3">
             <UButton
               label="Continue"
-              trailing-icon="i-lucide-arrow-right"
               color="primary"
               :disabled="!stepValid"
               @click="next"
@@ -1072,6 +980,34 @@ const prefill = () => {
         </div>
       </div>
     </UContainer>
+
+    <!-- discard confirmation (step 1 — nothing saved as a draft yet) -->
+    <UModal
+      v-model:open="discardOpen"
+      title="Leave without saving?"
+      description="You're on the first step — this event hasn't been saved as a draft yet. Your changes will be lost."
+    >
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton label="Stay" color="neutral" variant="ghost" @click="discardOpen = false" />
+          <UButton label="Leave" color="error" @click="leaveWizard" />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- delete draft confirmation -->
+    <UModal
+      v-model:open="deleteDraftOpen"
+      title="Delete this draft?"
+      :description="draftEvent ? `“${draftEvent.title}” will be removed for good. This can't be undone.` : `This draft will be removed for good. This can't be undone.`"
+    >
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton label="Cancel" color="neutral" variant="ghost" @click="deleteDraftOpen = false" />
+          <UButton label="Delete draft" icon="i-lucide-trash-2" color="error" @click="confirmDeleteDraft" />
+        </div>
+      </template>
+    </UModal>
 
     <!-- prototype-only: quick demo fill -->
     <div class="fixed bottom-5 right-5 z-50">

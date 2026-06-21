@@ -2,7 +2,7 @@
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import {
-  UPCOMING_PAYOUTS, PENDING_TOTAL, PAYOUT_HISTORY, PAID_TOTAL, BANK_ACCOUNT, fmtKc
+  UPCOMING_PAYOUTS, PENDING_TOTAL, THIS_WEEK_TOTAL, NEXT_PAYOUT, PAYOUT_HISTORY, PAID_TOTAL, BANK_ACCOUNT, fmtKc
 } from '~/utils/payouts'
 import type { UpcomingPayout, PayoutTransfer } from '~/utils/payouts'
 
@@ -15,14 +15,14 @@ const tiles = computed(() => [
     sub: `${UPCOMING_PAYOUTS.length} events on sale`
   },
   {
-    label: 'Next unlock',
-    value: UPCOMING_PAYOUTS[0]!.unlockLabel,
-    sub: `${UPCOMING_PAYOUTS[0]!.event} · ${fmtKc(UPCOMING_PAYOUTS[0]!.net)}`
+    label: 'Next payout',
+    value: NEXT_PAYOUT,
+    sub: `${fmtKc(THIS_WEEK_TOTAL)} this week`
   },
   {
     label: 'Paid out to date',
     value: fmtKc(PAID_TOTAL),
-    sub: `${PAYOUT_HISTORY.length} transfer · last ${PAYOUT_HISTORY[0]!.dateLabel}`
+    sub: `${PAYOUT_HISTORY.length} weekly transfers · last ${PAYOUT_HISTORY[0]!.dateLabel}`
   }
 ])
 
@@ -32,24 +32,21 @@ const upcomingColumns: TableColumn<UpcomingPayout>[] = [
     header: 'Event',
     cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.event)
   },
-  { accessorKey: 'endsLabel', header: 'Ends' },
+  { accessorKey: 'onSaleLabel', header: 'Sale' },
   {
-    accessorKey: 'unlockLabel',
-    header: 'Unlocks',
-    cell: ({ row }) => h('span', {}, [
-      h('span', { class: 'text-default font-medium' }, row.original.unlockLabel),
-      h('span', { class: 'text-muted' }, ` · in ${row.original.unlockInDays} days`)
-    ])
+    accessorKey: 'thisWeek',
+    header: 'This week',
+    cell: ({ row }) => h('span', { class: 'block tabular-nums font-medium text-default' }, fmtKc(row.original.thisWeek))
   },
   {
     accessorKey: 'net',
-    header: 'Net payout',
+    header: 'Pending balance',
     cell: ({ row }) => h('span', { class: 'block tabular-nums font-semibold text-highlighted' }, fmtKc(row.original.net))
   },
   {
     id: 'status',
     header: 'Status',
-    cell: () => h(UBadge, { label: 'Locked', color: 'neutral', variant: 'subtle', size: 'sm', icon: 'i-lucide-lock' })
+    cell: () => h(UBadge, { label: `Next payout ${NEXT_PAYOUT}`, color: 'info', variant: 'subtle', size: 'sm', icon: 'i-lucide-calendar-clock' })
   }
 ]
 
@@ -85,20 +82,20 @@ const historyColumns: TableColumn<PayoutTransfer>[] = [
       </div>
     </div>
 
-    <!-- how payouts work (straight from the PoC doc) -->
+    <!-- how payouts work -->
     <UAlert
       color="info"
       variant="subtle"
-      icon="i-lucide-clock"
-      title="Payouts unlock 48 hours after an event ends"
-      description="A daily run then sends the net amount — ticket revenue minus the 7% platform commission and payment fees — to your bank account. Money arrives in 2–5 business days."
+      icon="i-lucide-calendar-clock"
+      title="Weekly automatic payouts"
+      description="Payouts run automatically every week while your event is on sale — use ticket revenue as it comes in."
     />
 
     <!-- upcoming payouts -->
     <UPageCard
       variant="outline"
       title="Upcoming payouts"
-      :description="`What each event on sale will transfer to ${BANK_ACCOUNT.bank} ${BANK_ACCOUNT.masked.slice(-4)} once it unlocks.`"
+      :description="`What each event on sale is accruing for ${BANK_ACCOUNT.bank} ${BANK_ACCOUNT.masked.slice(-4)} — paid out with the weekly run on ${NEXT_PAYOUT}.`"
     >
       <UTable
         :data="UPCOMING_PAYOUTS"
@@ -112,7 +109,7 @@ const historyColumns: TableColumn<PayoutTransfer>[] = [
     <UPageCard
       variant="outline"
       title="Payout history"
-      description="Every transfer we've sent you, with its Stripe status."
+      description="Every weekly transfer we've sent you, with its Stripe status."
     >
       <UTable
         :data="PAYOUT_HISTORY"

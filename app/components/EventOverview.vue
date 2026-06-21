@@ -14,13 +14,6 @@ const orders = useOrders()
 const campaignList = useCampaigns()
 
 /* ——— tiles ——— */
-const payout = computed(() => {
-  const gross = EVENT_SALES_TOTALS.revenue
-  const platformFee = Math.round(gross * 0.07)
-  const providerFee = Math.round(gross * 0.016)
-  return gross - platformFee - providerFee
-})
-
 const tiles = computed(() => [
   {
     label: 'Tickets sold',
@@ -29,7 +22,6 @@ const tiles = computed(() => [
     bar: (EVENT_SALES_TOTALS.tickets / EVENT_SALES_TOTALS.capacity) * 100
   },
   { label: 'Revenue', value: `${fmtN(EVENT_SALES_TOTALS.revenue)} Kč`, sub: 'gross, before fees' },
-  { label: 'Your payout', value: `≈ ${fmtN(payout.value)} Kč`, sub: 'unlocks 22 Jun · 22:00 — 48 h after the event' },
   { label: 'Event starts', value: 'in 9 days', sub: 'Sat 20 Jun · 19:00' }
 ])
 
@@ -83,7 +75,7 @@ const confirmCancel = () => {
 <template>
   <div class="flex flex-col gap-6">
     <!-- tiles -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div v-for="t in tiles" :key="t.label" class="rounded-lg ring ring-default bg-default p-4">
         <p class="text-[11px] font-semibold uppercase tracking-wide text-muted">{{ t.label }}</p>
         <p class="text-2xl font-semibold text-highlighted tabular-nums mt-2">{{ t.value }}</p>
@@ -158,7 +150,7 @@ const confirmCancel = () => {
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">Still editable</p>
               <ul class="flex flex-col gap-2 text-sm text-default">
-                <li v-for="item in ['Add new ticket types', 'Change prices on existing types', 'Add seat assignments', 'Increase standing capacity']" :key="item" class="flex gap-2.5">
+                <li v-for="item in ['Change prices on existing types', 'Increase standing capacity']" :key="item" class="flex gap-2.5">
                   <UIcon name="i-lucide-circle-plus" class="size-4 shrink-0 text-success mt-0.5" />
                   {{ item }}
                 </li>
@@ -214,11 +206,8 @@ const confirmCancel = () => {
       <!-- right column -->
       <div class="flex flex-col gap-6">
         <!-- event card -->
-        <UPageCard variant="outline" :ui="{ container: 'p-0 sm:p-0' }">
-          <div class="aspect-video bg-elevated relative">
-            <img :src="`https://picsum.photos/seed/kralovka/640/360`" alt="" class="absolute inset-0 size-full object-cover rounded-t-lg">
-          </div>
-          <div class="p-4 flex flex-col gap-3">
+        <UPageCard variant="outline">
+          <div class="flex flex-col gap-3">
             <div>
               <p class="font-semibold text-highlighted">{{ title }}</p>
               <p class="flex items-center gap-1.5 text-sm text-muted mt-1">

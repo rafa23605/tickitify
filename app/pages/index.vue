@@ -1,121 +1,41 @@
 <script setup lang="ts">
-import type { AdminEvent } from '~/components/EventRow.vue'
-
 useHead({ title: 'Events · Tickitify' })
 
 /** Prototype-only switch between the two screen states */
 const demoState = ref<'season' | 'empty'>('season')
 
-const events: AdminEvent[] = [
-  {
-    slug: 'vnl-cze-pol',
-    title: 'CZE × POL — VNL Qualifier',
-    venue: 'Královka Arena',
-    city: 'Praha',
-    day: '20',
-    month: 'Jun',
-    weekday: 'Sat',
-    time: '19:00',
-    status: 'published',
-    sold: 1284,
-    capacity: 3200,
-    revenue: '391 080 Kč'
-  },
-  {
-    slug: 'cup-final-four',
-    title: 'Czech Cup — Final Four',
-    venue: 'Ostravar Aréna',
-    city: 'Ostrava',
-    day: '27',
-    month: 'Jun',
-    weekday: 'Sat',
-    time: '17:30',
-    status: 'published',
-    sold: 4800,
-    capacity: 4800,
-    revenue: '1 824 000 Kč'
-  },
-  {
-    slug: 'u20-championship',
-    title: 'U20 Youth Championship',
-    venue: 'Hala Vodova',
-    city: 'Brno',
-    day: '12',
-    month: 'Jul',
-    weekday: 'Sun',
-    time: '14:00',
-    status: 'draft',
-    note: 'Updated 2 days ago'
-  },
-  {
-    slug: 'beach-open-smichov',
-    title: 'Beach Volleyball Open',
-    venue: 'Smíchovská pláž',
-    city: 'Praha',
-    day: '01',
-    month: 'Aug',
-    weekday: 'Sat',
-    time: '10:00',
-    status: 'draft',
-    note: 'Updated 5 days ago'
-  },
-  {
-    slug: 'cze-svk-friendly',
-    title: 'CZE × SVK — Friendly',
-    venue: 'Královka Arena',
-    city: 'Praha',
-    day: '15',
-    month: 'May',
-    weekday: 'Fri',
-    time: '18:00',
-    status: 'completed',
-    sold: 2911,
-    capacity: 3000,
-    revenue: '873 300 Kč',
-    note: 'Paid out 19 May'
-  },
-  {
-    slug: 'legends-night',
-    title: 'Legends Night — Exhibition',
-    venue: 'Tipsport Arena',
-    city: 'Praha',
-    day: '05',
-    month: 'Jun',
-    weekday: 'Fri',
-    time: '20:00',
-    status: 'cancelled',
-    note: '118 tickets refunded'
-  }
-]
+const events = useAdminEvents()
 
 const tab = ref('all')
 
 const counts = computed(() => ({
-  all: events.length,
-  onsale: events.filter(e => e.status === 'published').length,
-  drafts: events.filter(e => e.status === 'draft').length,
-  finished: events.filter(e => e.status === 'completed' || e.status === 'cancelled').length
+  all: events.value.length,
+  published: events.value.filter(e => e.status === 'published').length,
+  drafts: events.value.filter(e => e.status === 'draft').length,
+  completed: events.value.filter(e => e.status === 'completed').length,
+  cancelled: events.value.filter(e => e.status === 'cancelled').length
 }))
 
 const tabItems = computed(() => [
   { label: 'All', value: 'all', badge: counts.value.all },
-  { label: 'On sale', value: 'onsale', badge: counts.value.onsale },
+  { label: 'Published', value: 'published', badge: counts.value.published },
   { label: 'Drafts', value: 'drafts', badge: counts.value.drafts },
-  { label: 'Finished', value: 'finished', badge: counts.value.finished }
+  { label: 'Completed', value: 'completed', badge: counts.value.completed },
+  { label: 'Cancelled', value: 'cancelled', badge: counts.value.cancelled }
 ])
 
 const visible = computed(() => {
   switch (tab.value) {
-    case 'onsale': return events.filter(e => e.status === 'published')
-    case 'drafts': return events.filter(e => e.status === 'draft')
-    case 'finished': return events.filter(e => e.status === 'completed' || e.status === 'cancelled')
-    default: return events
+    case 'published': return events.value.filter(e => e.status === 'published')
+    case 'drafts': return events.value.filter(e => e.status === 'draft')
+    case 'completed': return events.value.filter(e => e.status === 'completed')
+    case 'cancelled': return events.value.filter(e => e.status === 'cancelled')
+    default: return events.value
   }
 })
 
 const emptyActions = [
-  { label: 'Create your first event', icon: 'i-lucide-plus', size: 'lg' as const, to: '/events/new' },
-  { label: 'Set up payouts', icon: 'i-lucide-landmark', size: 'lg' as const, color: 'neutral' as const, variant: 'subtle' as const, to: '/settings' }
+  { label: 'Create your first event', icon: 'i-lucide-plus', size: 'lg' as const, to: '/events/new' }
 ]
 
 const wizardSteps = [
@@ -137,7 +57,7 @@ const wizardSteps = [
         <UPageHeader
           headline="Czech Volleyball Federation"
           title="Events"
-          description="This week: 1 284 tickets · 391 080 Kč · pending payout 2 024 583 Kč, first unlock 22 Jun · next event in 9 days"
+          description="This week: 2 events"
           :links="[{ label: 'New event', icon: 'i-lucide-plus', color: 'primary', variant: 'solid', to: '/events/new' }]"
           :ui="{ root: 'border-none py-8' }"
         />
