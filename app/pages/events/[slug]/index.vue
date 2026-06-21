@@ -16,6 +16,11 @@ const meta = computed(() =>
 
 useHead({ title: () => `${meta.value.title} · Tickitify` })
 
+/* a draft is an unfinished event — it has no workspace; resume it in the wizard */
+if (meta.value.status === 'draft') {
+  await navigateTo(`/events/new?draft=${slug.value}`, { replace: true })
+}
+
 const statusBadge = computed(() => {
   switch (meta.value.status) {
     case 'published': return { label: 'On sale', color: 'success' as const, variant: 'subtle' as const }
@@ -30,16 +35,8 @@ const tab = ref('overview')
 const tabs = [
   { label: 'Overview', value: 'overview' },
   { label: 'Sales', value: 'sales' },
-  { label: 'Marketing', value: 'marketing' },
-  { label: 'Customers', value: 'customers' }
+  { label: 'Marketing', value: 'marketing' }
 ]
-
-/* deep-link from a customer profile into Sales with the search prefilled */
-const salesSearch = useState('sales-search', () => '')
-const onViewOrders = (email: string) => {
-  salesSearch.value = email
-  tab.value = 'sales'
-}
 
 /* ——— analytics data ——— */
 const campaignList = useCampaigns()
@@ -245,7 +242,6 @@ const createCampaign = () => {
         @open-tab="t => tab = t"
       />
       <EventSales v-else-if="tab === 'sales'" />
-      <EventCustomers v-else @view-orders="onViewOrders" />
     </UContainer>
 
     <!-- ════ new campaign modal ════ -->

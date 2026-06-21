@@ -8,27 +8,17 @@ import {
 import type { Order, OrderStatus } from '~/utils/salesOrders'
 
 const orders = useOrders()
-const toast = useToast()
 
-/* ——— stats tiles (event totals + refunds issued in this session) ——— */
-const seedRefunded = new Set(['2406-1094', '2406-1085'])
-const sessionRefunds = computed(() =>
-  orders.value.filter(o => o.status === 'refunded' && !seedRefunded.has(o.id))
-)
+/* ——— stats tiles (event totals) ——— */
 const tiles = computed(() => {
-  const extraTickets = sessionRefunds.value.reduce((s, o) => s + o.tickets.length, 0)
-  const extraAmount = sessionRefunds.value.reduce((s, o) => s + orderTotal(o), 0)
-  const tickets = EVENT_SALES_TOTALS.tickets - extraTickets
-  const revenue = EVENT_SALES_TOTALS.revenue - extraAmount
+  const tickets = EVENT_SALES_TOTALS.tickets
+  const revenue = EVENT_SALES_TOTALS.revenue
+  const failed = orders.value.filter(o => o.status === 'failed').length
   return [
     { label: 'Tickets sold', value: fmtN(tickets), sub: `of ${fmtN(EVENT_SALES_TOTALS.capacity)} capacity` },
     { label: 'Revenue', value: `${fmtN(revenue)} Kč`, sub: 'gross, before 7% commission' },
     { label: 'Avg ticket', value: `${fmtN(Math.round(revenue / tickets))} Kč`, sub: 'revenue / tickets sold' },
-    {
-      label: 'Refunded',
-      value: fmtN(EVENT_SALES_TOTALS.refundedTickets + extraTickets),
-      sub: `${fmtN(EVENT_SALES_TOTALS.refundedAmount + extraAmount)} Kč returned to sale`
-    }
+    { label: 'Failed', value: fmtN(failed), sub: 'payments not captured' }
   ]
 })
 
@@ -38,9 +28,7 @@ const status = ref<'all' | OrderStatus>('all')
 const statusItems = [
   { label: 'All statuses', value: 'all' },
   { label: 'Paid', value: 'paid' },
-  { label: 'Refunded', value: 'refunded' },
-  { label: 'Failed', value: 'failed' },
-  { label: 'Disputed', value: 'disputed' }
+  { label: 'Failed', value: 'failed' }
 ]
 const period = ref('all')
 const periodItems = [
@@ -130,24 +118,6 @@ const openOrder = (_e: Event, row: any) => {
   selectedId.value = row.original.id
   slideoverOpen.value = true
 }
-
-/* ——— refund flow (Flow 6 in the PoC doc) ——— */
-const refundModal = ref(false)
-
-const confirmRefund = () => {
-  const o = selected.value
-  if (!o) return
-  o.status = 'refunded'
-  o.refundedLabel = 'just now'
-  refundModal.value = false
-  slideoverOpen.value = false
-  toast.add({
-    title: 'Refund issued',
-    description: `Stripe refunds ${fmtN(orderTotal(o))} Kč automatically — seats are back on sale.`,
-    icon: 'i-lucide-undo-2',
-    color: 'success'
-  })
-}
 </script>
 
 <template>
@@ -166,7 +136,7 @@ const confirmRefund = () => {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="text-base font-semibold text-highlighted">Orders</p>
-          <p class="text-[15px] text-muted mt-1">Find an order by buyer email or order ID — refunds start here.</p>
+          <p class="text-[15px] text-muted mt-1">Find an order by buyer email or order ID.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <UInput
@@ -278,21 +248,13 @@ const confirmRefund = () => {
               </div>
             </dl>
             <p v-if="selected.status === 'paid'" class="text-xs text-dimmed mt-2">
-              Added to your balance — unlocks 48 h after the event ends.
+              Added to your balance — paid out in the next weekly payout.
             </p>
           </div>
 
           <!-- status-specific notes -->
           <UAlert
-            v-if="selected.status === 'refunded'"
-            color="warning"
-            variant="subtle"
-            icon="i-lucide-undo-2"
-            title="Order refunded"
-            :description="`Refund issued ${selected.refundedLabel}. Seats returned to sale; the amount was deducted from your pending payout.`"
-          />
-          <UAlert
-            v-else-if="selected.status === 'failed'"
+            v-if="selected.status === 'failed'"
             color="error"
             variant="subtle"
             icon="i-lucide-circle-x"
@@ -311,53 +273,10 @@ const confirmRefund = () => {
       </template>
 
       <template #footer="{ close }">
-        <div class="flex w-full items-center justify-between gap-2">
+        <div class="flex w-full items-center justify-end gap-2">
           <UButton label="Close" color="neutral" variant="ghost" @click="close" />
-          <UButton
-            v-if="selected?.status === 'paid'"
-            label="Issue refund"
-            icon="i-lucide-undo-2"
-            color="error"
-            variant="subtle"
-            @click="refundModal = true"
-          />
         </div>
       </template>
     </USlideover>
-
-    <!-- ════ refund confirmation ════ -->
-    <UModal
-      v-model:open="refundModal"
-      :title="selected ? `Refund order #${selected.id}?` : 'Refund order?'"
-      :description="selected ? `${itemsLabel(selected)} · ${fmtN(orderTotal(selected))} Kč · ${displayEmail(selected)}` : undefined"
-    >
-      <template #body>
-        <ul class="flex flex-col gap-2.5 text-sm text-default">
-          <li class="flex gap-2.5">
-            <UIcon name="i-lucide-credit-card" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            Stripe issues the refund automatically — no manual transfer needed.
-          </li>
-          <li class="flex gap-2.5">
-            <UIcon name="i-lucide-armchair" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            The seats go back on sale while the event is still selling.
-          </li>
-          <li class="flex gap-2.5">
-            <UIcon name="i-lucide-landmark" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            The amount is deducted from your pending payout balance.
-          </li>
-        </ul>
-      </template>
-      <template #footer="{ close }">
-        <div class="flex w-full justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
-          <UButton
-            :label="selected ? `Refund ${fmtN(orderTotal(selected))} Kč` : 'Refund'"
-            icon="i-lucide-undo-2"
-            color="error"
-            @click="confirmRefund"
-          />
-        </div>
-      </template>
-    </UModal>
   </div>
 </template>

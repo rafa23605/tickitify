@@ -4,7 +4,6 @@ import { BANK_ACCOUNT, KYC } from '~/utils/payouts'
 const toast = useToast()
 
 const orgName = ref('Czech Volleyball Federation')
-const supportEmail = ref('vstupenky@cvf.cz')
 
 const saveOrg = () => {
   toast.add({ title: 'Organization saved', icon: 'i-lucide-check', color: 'success' })
@@ -19,10 +18,6 @@ const manageStripe = () => {
   })
 }
 
-const downloadDpa = () => {
-  toast.add({ title: 'Downloading DPA v1.2', description: 'PDF download — prototype placeholder.', icon: 'i-lucide-file-down', color: 'neutral' })
-}
-
 const resetPassword = () => {
   toast.add({
     title: 'Reset link sent',
@@ -31,10 +26,58 @@ const resetPassword = () => {
     color: 'success'
   })
 }
+
+const changeCover = () => {
+  toast.add({ title: 'Cover upload opens here', description: 'Pick a banner for your storefront — prototype placeholder.', icon: 'i-lucide-image', color: 'info' })
+}
+
+const changePhoto = () => {
+  toast.add({ title: 'Photo upload opens here', description: 'Pick your brand logo — prototype placeholder.', icon: 'i-lucide-camera', color: 'info' })
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
+    <!-- brand / profile header -->
+    <UPageCard variant="outline" :ui="{ container: 'p-0 sm:p-0', body: 'p-0 sm:p-0' }">
+      <div class="relative">
+        <!-- cover band -->
+        <div class="h-32 sm:h-40 bg-elevated rounded-t-[calc(var(--ui-radius)*2)]" />
+        <div class="absolute top-3 right-3">
+          <UButton
+            label="Change cover"
+            icon="i-lucide-image"
+            color="neutral"
+            variant="subtle"
+            size="sm"
+            @click="changeCover"
+          />
+        </div>
+        <!-- overlapping avatar -->
+        <div class="absolute left-4 sm:left-6 -bottom-6">
+          <UAvatar
+            text="VF"
+            size="2xl"
+            class="ring-4 ring-default bg-elevated text-highlighted"
+          />
+        </div>
+      </div>
+      <div class="flex flex-wrap items-end justify-between gap-3 px-4 sm:px-6 pt-9 pb-5 pl-24 sm:pl-28">
+        <div>
+          <p class="text-base font-semibold text-highlighted">Czech Volleyball Federation</p>
+          <p class="text-sm text-muted">Organizer brand · shown on your storefront and tickets</p>
+        </div>
+        <UButton
+          label="Change photo"
+          icon="i-lucide-camera"
+          color="neutral"
+          variant="subtle"
+          size="sm"
+          @click="changePhoto"
+        />
+      </div>
+    </UPageCard>
+
     <!-- Stripe Connect / KYC -->
     <UPageCard
       variant="outline"
@@ -94,52 +137,14 @@ const resetPassword = () => {
       title="Organization"
       description="How your brand appears to buyers — on the storefront, tickets and emails."
     >
-      <div class="grid sm:grid-cols-2 gap-6 mt-2">
+      <div class="mt-2 sm:max-w-md">
         <UFormField label="Display name" help="Shown on the storefront and on every ticket.">
           <UInput v-model="orgName" class="w-full" />
-        </UFormField>
-        <UFormField label="Support email" help="Buyers reply here from transactional emails.">
-          <UInput v-model="supportEmail" type="email" class="w-full" />
         </UFormField>
       </div>
       <div class="flex justify-end mt-4">
         <UButton label="Save changes" color="primary" @click="saveOrg" />
       </div>
-    </UPageCard>
-
-    <!-- GDPR & DPA -->
-    <UPageCard
-      variant="outline"
-      title="GDPR & data processing"
-      description="Buyer data lives in the EU; you see personal details only where buyers gave consent."
-    >
-      <div class="flex flex-wrap items-center justify-between gap-3 mt-2">
-        <div class="flex items-center gap-3">
-          <UAvatar icon="i-lucide-shield-check" size="md" />
-          <div>
-            <p class="text-sm font-medium text-highlighted flex items-center gap-2">
-              Data Processing Agreement
-              <UBadge label="Accepted" color="success" variant="subtle" size="sm" />
-            </p>
-            <p class="text-xs text-muted">v1.2 · accepted 5 May 2026 during onboarding</p>
-          </div>
-        </div>
-        <UButton
-          label="Download DPA"
-          icon="i-lucide-file-down"
-          color="neutral"
-          variant="subtle"
-          @click="downloadDpa"
-        />
-      </div>
-
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-eye-off"
-        description="Buyer emails and phones stay masked unless that buyer granted data-sharing consent to you — see the Customers tab of any event."
-        class="mt-4"
-      />
     </UPageCard>
 
     <!-- sign-in & security -->

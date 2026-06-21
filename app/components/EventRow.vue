@@ -17,18 +17,16 @@ export interface AdminEvent {
 
 const props = defineProps<{ event: AdminEvent }>()
 
-const soldOut = computed(
-  () =>
-    props.event.status === 'published'
-    && props.event.sold !== undefined
-    && props.event.capacity !== undefined
-    && props.event.sold >= props.event.capacity
+/** a draft is an unfinished event — open it in the creation wizard, not the workspace */
+const target = computed(() =>
+  props.event.status === 'draft'
+    ? `/events/new?draft=${props.event.slug}`
+    : `/events/${props.event.slug}`
 )
 
 const badge = computed(() => {
-  if (soldOut.value) return { label: 'Sold out', color: 'primary' as const, variant: 'subtle' as const }
   switch (props.event.status) {
-    case 'published': return { label: 'On sale', color: 'success' as const, variant: 'subtle' as const }
+    case 'published': return { label: 'Published', color: 'success' as const, variant: 'subtle' as const }
     case 'draft': return { label: 'Draft', color: 'neutral' as const, variant: 'subtle' as const }
     case 'completed': return { label: 'Completed', color: 'neutral' as const, variant: 'outline' as const }
     case 'cancelled': return { label: 'Cancelled', color: 'error' as const, variant: 'subtle' as const }
@@ -40,7 +38,7 @@ const fmt = (n: number) => n.toLocaleString('cs-CZ')
 
 <template>
   <UPageCard
-    :to="`/events/${event.slug}`"
+    :to="target"
     variant="outline"
     :ui="{ container: 'p-4 sm:p-4' }"
     :class="(event.status === 'completed' || event.status === 'cancelled') ? 'opacity-75' : ''"
@@ -80,18 +78,11 @@ const fmt = (n: number) => n.toLocaleString('cs-CZ')
         </template>
 
         <template v-else-if="event.status === 'draft'">
-          <p class="flex items-center gap-1 text-sm font-medium text-primary">
-            Continue setup
-            <UIcon name="i-lucide-arrow-right" class="size-4" />
-          </p>
+          <p class="text-sm font-medium text-primary">Continue setup</p>
         </template>
 
         <template v-else-if="event.status === 'completed'">
           <p class="text-sm font-semibold text-highlighted tabular-nums">{{ event.revenue }}</p>
-          <p class="flex items-center gap-1 text-xs text-success">
-            <UIcon name="i-lucide-check" class="size-3.5" />
-            {{ event.note }}
-          </p>
         </template>
 
         <template v-else>

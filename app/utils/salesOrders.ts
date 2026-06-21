@@ -1,6 +1,6 @@
 /** Mock orders dataset for the Sales tab — one order per checkout session (per PoC doc). */
 
-export type OrderStatus = 'paid' | 'refunded' | 'failed' | 'disputed'
+export type OrderStatus = 'paid' | 'failed' | 'disputed'
 
 export interface OrderTicket {
   /** e.g. "Court Side A · B-07" or "Standing Floor · GA" */
@@ -21,16 +21,13 @@ export interface Order {
   /** unix ms, fixed mock values */
   ts: number
   dateLabel: string
-  refundedLabel?: string
 }
 
 /** event-level totals (whole sales history, not just the visible page) */
 export const EVENT_SALES_TOTALS = {
   tickets: 1284,
   capacity: 3200,
-  revenue: 391080,
-  refundedTickets: 18,
-  refundedAmount: 6840
+  revenue: 391080
 }
 
 const T = (d: number, h: number, m: number) => Date.UTC(2026, 5, d, h - 2, m) // CEST
@@ -41,7 +38,7 @@ export const initialOrders: Order[] = [
   { id: '2406-1097', email: 'jana.kralova@seznam.cz', consent: true, marketingConsent: true, status: 'paid', ts: T(11, 21, 14), dateLabel: '11 Jun · 21:14', tickets: [{ seat: 'Court Side A · A-03', type: 'VIP', price: 800 }, { seat: 'Court Side A · A-04', type: 'VIP', price: 800 }] },
   { id: '2406-1096', email: 'petr.novak@gmail.com', consent: false, marketingConsent: false, status: 'paid', ts: T(11, 20, 48), dateLabel: '11 Jun · 20:48', tickets: [{ seat: 'Court Side A · C-11', type: 'Standard', price: 400 }] },
   { id: '2406-1095', email: 'marek.svoboda@email.cz', consent: true, marketingConsent: false, status: 'paid', ts: T(11, 19, 2), dateLabel: '11 Jun · 19:02', tickets: [{ seat: 'Court Side A · D-05', type: 'Standard', price: 400 }, { seat: 'Court Side A · D-06', type: 'Standard', price: 400 }] },
-  { id: '2406-1094', email: 'lenka.maresova@seznam.cz', consent: false, marketingConsent: false, status: 'refunded', ts: T(11, 17, 30), dateLabel: '11 Jun · 17:30', refundedLabel: '11 Jun · 18:01', tickets: [{ seat: 'Court Side A · E-09', type: 'Standard', price: 400 }] },
+  { id: '2406-1094', email: 'lenka.maresova@seznam.cz', consent: false, marketingConsent: false, status: 'paid', ts: T(11, 17, 30), dateLabel: '11 Jun · 17:30', tickets: [{ seat: 'Court Side A · E-09', type: 'Standard', price: 400 }] },
   { id: '2406-1093', email: 'tereza.dvorakova@gmail.com', consent: true, marketingConsent: true, status: 'paid', ts: T(11, 16, 55), dateLabel: '11 Jun · 16:55', tickets: [{ seat: 'Court Side B · B-01', type: 'VIP', price: 800 }, { seat: 'Court Side B · F-02', type: 'Standard', price: 400 }] },
   { id: '2406-1092', email: 'ondrej.fiala@centrum.cz', consent: false, marketingConsent: false, status: 'failed', ts: T(11, 16, 40), dateLabel: '11 Jun · 16:40', tickets: [{ seat: 'Court Side B · C-08', type: 'Standard', price: 400 }] },
   { id: '2406-1091', email: 'lucie.cerna@gmail.com', consent: true, marketingConsent: true, status: 'paid', ts: T(11, 15, 12), dateLabel: '11 Jun · 15:12', tickets: [{ seat: 'Standing Floor · GA', type: 'Standard', price: 400, standing: true }, { seat: 'Standing Floor · GA', type: 'Standard', price: 400, standing: true }] },
@@ -50,7 +47,7 @@ export const initialOrders: Order[] = [
   { id: '2406-1088', email: 'michal.zeman@gmail.com', consent: false, marketingConsent: false, status: 'paid', ts: T(10, 19, 44), dateLabel: '10 Jun · 19:44', tickets: [{ seat: 'Court Side B · H-01', type: 'Standard', price: 400 }, { seat: 'Court Side B · H-02', type: 'Standard', price: 400 }, { seat: 'Court Side B · H-03', type: 'Standard', price: 400 }] },
   { id: '2406-1087', email: 'eva.horakova@seznam.cz', consent: true, marketingConsent: true, status: 'paid', ts: T(10, 18, 31), dateLabel: '10 Jun · 18:31', tickets: [{ seat: 'Court Side A · A-12', type: 'VIP', price: 800 }] },
   { id: '2406-1086', email: 'david.kolar@email.cz', consent: false, marketingConsent: false, status: 'paid', ts: T(10, 17, 9), dateLabel: '10 Jun · 17:09', tickets: [{ seat: 'Standing Floor · GA', type: 'Standard', price: 400, standing: true }] },
-  { id: '2406-1085', email: 'tomas.benes@gmail.com', consent: true, marketingConsent: false, status: 'refunded', ts: T(10, 16, 2), dateLabel: '10 Jun · 16:02', refundedLabel: '10 Jun · 17:15', tickets: [{ seat: 'Court Side B · B-07', type: 'VIP', price: 800 }] },
+  { id: '2406-1085', email: 'tomas.benes@gmail.com', consent: true, marketingConsent: false, status: 'paid', ts: T(10, 16, 2), dateLabel: '10 Jun · 16:02', tickets: [{ seat: 'Court Side B · B-07', type: 'VIP', price: 800 }] },
   { id: '2406-1084', email: 'katerina.simkova@seznam.cz', consent: false, marketingConsent: false, status: 'paid', ts: T(10, 14, 58), dateLabel: '10 Jun · 14:58', tickets: [{ seat: 'Court Side A · C-02', type: 'Standard', price: 400 }] },
   { id: '2406-1083', email: 'filip.urban@email.cz', consent: true, marketingConsent: true, status: 'paid', ts: T(10, 13, 26), dateLabel: '10 Jun · 13:26', tickets: [{ seat: 'Court Side A · D-11', type: 'Standard', price: 400 }, { seat: 'Court Side A · D-12', type: 'Standard', price: 400 }] },
   { id: '2406-1082', email: 'veronika.kucerova@gmail.com', consent: true, marketingConsent: true, status: 'paid', ts: T(10, 11, 47), dateLabel: '10 Jun · 11:47', tickets: [{ seat: 'Standing Floor · GA', type: 'Standard', price: 400, standing: true }] }
@@ -81,9 +78,8 @@ export const orderBreakdown = (o: Order) => {
 }
 
 /** shared status badge config for tables and detail views */
-export const STATUS_BADGE: Record<OrderStatus, { label: string, color: 'success' | 'warning' | 'error', variant: 'subtle' | 'outline' }> = {
+export const STATUS_BADGE: Record<OrderStatus, { label: string, color: 'success' | 'error', variant: 'subtle' | 'outline' }> = {
   paid: { label: 'Paid', color: 'success', variant: 'subtle' },
-  refunded: { label: 'Refunded', color: 'warning', variant: 'subtle' },
   failed: { label: 'Failed', color: 'error', variant: 'subtle' },
   disputed: { label: 'Disputed', color: 'error', variant: 'outline' }
 }
