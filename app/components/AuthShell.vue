@@ -12,5 +12,7 @@
     <div class="text-xs text-dimmed mt-7 text-center max-w-sm leading-relaxed">
       <slot name="foot" />
     </div>
+
+    <LangSwitcher variant="inline" align="center" class="mt-3" />
   </div>
 </template>
