@@ -41,21 +41,38 @@ const typeStyles = computed<Record<string, { bg: string }>>(() =>
 const capacity = ref<number>(STANDING_ZONE.capacity)
 const capacityChanged = computed(() => capacity.value > STANDING_ZONE.capacity)
 
+/* ——— which fields differ from the live event (drives the soft highlight) ——— */
+const priceChanged = (t: EditType) => t.locked && !!t.price && t.price !== originalPrices[t.id]
+
 /* ——— change summary: price changes on existing types + standing capacity increase ——— */
 const changes = computed(() => {
   const list: string[] = []
   for (const t of types.value) {
-    if (t.locked && t.price && t.price !== originalPrices[t.id]) {
-      list.push(`${t.name} ${fmtN(originalPrices[t.id]!)} → ${fmtN(t.price)} Kč`)
+    if (priceChanged(t)) {
+      list.push(`${t.name} ${fmtN(originalPrices[t.id]!)} → ${fmtN(t.price!)} Kč`)
     }
   }
   if (capacityChanged.value) list.push(`Standing ${fmtN(STANDING_ZONE.capacity)} → ${fmtN(capacity.value)}`)
   return list
 })
 
+const priceChangeCount = computed(() => types.value.filter(priceChanged).length)
 const canSave = computed(() => changes.value.length > 0)
 
+/* ——— save confirmation ——— */
+const confirmOpen = ref(false)
+
+const confirmSummary = computed(() => {
+  const parts: string[] = []
+  if (priceChangeCount.value) {
+    parts.push(`change the price of ${priceChangeCount.value} ticket ${priceChangeCount.value === 1 ? 'type' : 'types'}`)
+  }
+  if (capacityChanged.value) parts.push('increase the standing capacity')
+  return parts.join(' and ')
+})
+
 const save = () => {
+  confirmOpen.value = false
   toast.add({
     title: 'Changes are live',
     description: `${changes.value.length} ${changes.value.length === 1 ? 'change' : 'changes'} applied — buyers see them on the storefront immediately.`,
@@ -148,7 +165,9 @@ const save = () => {
                 :format-options="{ maximumFractionDigits: 0 }"
                 placeholder="400"
                 class="w-36"
-                :ui="{ base: 'pe-8' }"
+                :color="priceChanged(t) ? 'primary' : undefined"
+                :highlight="priceChanged(t)"
+                :ui="{ base: priceChanged(t) ? 'pe-8 bg-primary/10' : 'pe-8' }"
               >
                 <template #trailing>
                   <UIcon name="i-lucide-pencil" class="size-3.5 text-muted" />
@@ -197,6 +216,9 @@ const save = () => {
                 :max="STANDING_ZONE.max"
                 :step="20"
                 class="w-full"
+                :color="capacityChanged ? 'primary' : undefined"
+                :highlight="capacityChanged"
+                :ui="{ base: capacityChanged ? 'bg-primary/10' : '' }"
               />
             </UFormField>
           </div>
@@ -224,10 +246,39 @@ const save = () => {
             icon="i-lucide-check"
             color="primary"
             :disabled="!canSave"
-            @click="save"
+            @click="confirmOpen = true"
           />
         </div>
       </div>
+
+      <!-- ════ save confirmation ════ -->
+      <UModal
+        v-model:open="confirmOpen"
+        title="Save these changes?"
+        :description="`You're about to ${confirmSummary}.`"
+      >
+        <template #body>
+          <ul class="flex flex-col gap-2.5">
+            <li
+              v-for="c in changes"
+              :key="c"
+              class="flex items-center gap-2 text-sm font-medium text-highlighted"
+            >
+              <UIcon name="i-lucide-arrow-right" class="size-4 shrink-0 text-primary" />
+              {{ c }}
+            </li>
+          </ul>
+          <p class="text-sm text-muted mt-4">
+            Buyers see the updated prices and availability on the storefront immediately.
+          </p>
+        </template>
+        <template #footer="{ close }">
+          <div class="flex w-full justify-end gap-2">
+            <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
+            <UButton label="Save changes" icon="i-lucide-check" color="primary" @click="save" />
+          </div>
+        </template>
+      </UModal>
     </UContainer>
   </div>
 </template>
