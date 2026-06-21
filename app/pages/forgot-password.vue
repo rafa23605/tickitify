@@ -1,15 +1,17 @@
 <script setup lang="ts">
-useHead({ title: 'Reset password · Tickitify' })
+const t = useT()
+
+useHead({ title: t('forgot.docTitle') })
 
 const sent = ref(false)
 const sentTo = ref('')
 
-const fields = [
-  { name: 'email', type: 'text' as const, label: 'Email', placeholder: 'you@organizer.cz', required: true }
-]
+const fields = computed(() => [
+  { name: 'email', type: 'text' as const, label: t('forgot.emailLabel'), placeholder: t('forgot.emailPlaceholder'), required: true }
+])
 
 const onSubmit = (event: any) => {
-  sentTo.value = event.data?.email || 'your inbox'
+  sentTo.value = event.data?.email || t('forgot.defaultInbox')
   sent.value = true
 }
 </script>
@@ -19,15 +21,15 @@ const onSubmit = (event: any) => {
     <UAuthForm
       v-if="!sent"
       icon="i-lucide-key-round"
-      title="Forgot your password?"
-      description="Enter your account email — we'll send a reset link."
+      :title="t('forgot.title')"
+      :description="t('forgot.description')"
       :fields="fields"
-      :submit="{ label: 'Send reset link', color: 'primary', block: true }"
+      :submit="{ label: t('forgot.submitLabel'), color: 'primary', block: true }"
       @submit="onSubmit"
     >
       <template #footer>
         <p class="text-center text-sm">
-          <ULink to="/login" class="text-primary font-medium">Back to sign in</ULink>
+          <ULink to="/login" class="text-primary font-medium">{{ t('forgot.backToSignIn') }}</ULink>
         </p>
       </template>
     </UAuthForm>
@@ -35,17 +37,17 @@ const onSubmit = (event: any) => {
     <UEmpty
       v-else
       icon="i-lucide-mail-check"
-      title="Check your inbox"
-      :description="`We sent a reset link to ${sentTo}. It's valid for a limited time — check spam if it doesn't arrive.`"
+      :title="t('forgot.sentTitle')"
+      :description="t('forgot.sentDescription', { email: sentTo })"
       :actions="[
-        { label: 'Open the reset page', trailingIcon: 'i-lucide-arrow-right', color: 'primary' as const, to: '/reset-password' },
-        { label: 'Back to sign in', color: 'neutral' as const, variant: 'subtle' as const, to: '/login' }
+        { label: t('forgot.openResetPage'), trailingIcon: 'i-lucide-arrow-right', color: 'primary' as const, to: '/reset-password' },
+        { label: t('forgot.backToSignIn'), color: 'neutral' as const, variant: 'subtle' as const, to: '/login' }
       ]"
       class="py-6"
     />
 
     <template #foot>
-      Reset links are single-use email tokens — nobody at Tickitify ever sees your password.
+      {{ t('forgot.foot') }}
     </template>
   </AuthShell>
 </template>

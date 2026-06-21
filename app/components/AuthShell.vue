@@ -1,8 +1,11 @@
+<script setup lang="ts">
+import logoUrl from '~/assets/logo.svg'
+</script>
+
 <template>
   <div class="min-h-screen bg-muted flex flex-col items-center justify-center px-6 py-12">
-    <NuxtLink to="/login" class="flex items-center gap-2 mb-7" aria-label="Tickitify">
-      <UIcon name="i-lucide-ticket" class="size-7 text-primary" />
-      <span class="text-lg font-bold text-highlighted">Tickitify</span>
+    <NuxtLink to="/login" class="flex items-center mb-7" aria-label="Tickitify">
+      <img :src="logoUrl" alt="Tickitify" class="h-6 w-auto">
     </NuxtLink>
 
     <UPageCard variant="outline" class="w-full max-w-md bg-default">

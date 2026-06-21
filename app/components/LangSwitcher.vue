@@ -7,6 +7,7 @@ withDefaults(defineProps<{ align?: 'start' | 'center' | 'end', variant?: 'header
 
 const lang = useLang()
 const toast = useToast()
+const t = useT()
 
 function setLang(value: 'cs' | 'en') {
   lang.value = value
@@ -38,7 +39,7 @@ const nativeName = computed(() => (lang.value === 'cs' ? 'Česky' : 'English'))
       icon="i-lucide-languages"
       :label="lang === 'cs' ? 'CS' : 'EN'"
       size="sm"
-      aria-label="Change language"
+      :aria-label="t('nav.changeLanguage')"
     />
     <!-- auth screens: plain text language name + chevron, sized like the fine print -->
     <UButton
@@ -48,7 +49,7 @@ const nativeName = computed(() => (lang.value === 'cs' ? 'Česky' : 'English'))
       :label="nativeName"
       trailing-icon="i-lucide-chevron-down"
       size="xs"
-      aria-label="Change language"
+      :aria-label="t('nav.changeLanguage')"
       :ui="{ base: 'text-dimmed hover:text-default font-normal gap-1', trailingIcon: 'size-3.5' }"
     />
   </UDropdownMenu>

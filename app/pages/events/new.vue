@@ -2,7 +2,8 @@
 import { CalendarDate, Time } from '@internationalized/date'
 import type { SeatingSector, SeatStyle } from '~/components/SeatMapEditor.vue'
 
-useHead({ title: 'Create event · Tickitify' })
+const t = useT()
+useHead({ title: t('wizard.docTitle') })
 
 const toast = useToast()
 const route = useRoute()
@@ -141,8 +142,8 @@ const assignedLabel = (typeId: string) => {
   const standing = standingCapByType(typeId)
   if (!seats && !standing) return null
   const parts = []
-  if (seats) parts.push(`${seats.toLocaleString('cs-CZ')} seats`)
-  if (standing) parts.push(`${standing.toLocaleString('cs-CZ')} standing`)
+  if (seats) parts.push(t('wizard.seatsLabel', { n: seats.toLocaleString('cs-CZ') }))
+  if (standing) parts.push(t('wizard.standingLabel', { n: standing.toLocaleString('cs-CZ') }))
   return parts.join(' · ')
 }
 
@@ -185,10 +186,10 @@ const railStatus = (s: { id: string }) => {
   const seating = venue.value?.seating.find(x => x.id === s.id)
   if (seating) {
     const left = seating.rows * seating.seats - sectorAssigned(s.id)
-    return left === 0 ? 'done ✓' : `${left.toLocaleString('cs-CZ')} left`
+    return left === 0 ? t('wizard.railDone') : t('wizard.railLeft', { n: left.toLocaleString('cs-CZ') })
   }
   const cfg = form.standingConfig[s.id]
-  return (cfg?.typeId && cfg.capacity) ? `${cfg.capacity.toLocaleString('cs-CZ')} cap` : 'set capacity'
+  return (cfg?.typeId && cfg.capacity) ? t('wizard.railCap', { n: cfg.capacity.toLocaleString('cs-CZ') }) : t('wizard.railSetCapacity')
 }
 
 const toggleSeat = (key: string) => {
@@ -224,7 +225,7 @@ const selectAll = (sector: SeatingSector) => {
 
 const rowOptions = computed(() =>
   activeSeating.value
-    ? Array.from({ length: activeSeating.value.rows }, (_, i) => ({ label: `Row ${String.fromCharCode(65 + i)}`, value: i }))
+    ? Array.from({ length: activeSeating.value.rows }, (_, i) => ({ label: t('wizard.rowLabel', { letter: String.fromCharCode(65 + i) }), value: i }))
     : []
 )
 
@@ -282,10 +283,10 @@ const stepValid = computed(() => {
 const kycVerified = true // mock: Stripe Connect onboarding completed
 
 const preflight = computed(() => [
-  { ok: !!(form.title.trim() && form.venueId && form.startDate && form.endDate), label: 'Event details complete' },
-  { ok: validTypes.value.length > 0, label: `At least one ticket type (${validTypes.value.length} defined)` },
-  { ok: seatedTotal.value + standingTotal.value > 0, label: `Seats or standing capacity assigned (${seatedTotal.value.toLocaleString('cs-CZ')} · ${standingTotal.value.toLocaleString('cs-CZ')})` },
-  { ok: kycVerified, label: 'Organizer payout verification complete' }
+  { ok: !!(form.title.trim() && form.venueId && form.startDate && form.endDate), label: t('wizard.checkEventDetails') },
+  { ok: validTypes.value.length > 0, label: t('wizard.checkTicketTypes', { n: validTypes.value.length }) },
+  { ok: seatedTotal.value + standingTotal.value > 0, label: t('wizard.checkInventory', { seats: seatedTotal.value.toLocaleString('cs-CZ'), standing: standingTotal.value.toLocaleString('cs-CZ') }) },
+  { ok: kycVerified, label: t('wizard.checkPayout') }
 ])
 
 const canPublish = computed(() => preflight.value.every(c => c.ok))
@@ -322,15 +323,15 @@ const slug = computed(() =>
 const storefrontUrl = computed(() => `ticketify.cz/cvf/${slug.value}`)
 const copyUrl = async () => {
   await navigator.clipboard.writeText(`https://${storefrontUrl.value}`)
-  toast.add({ title: 'Link copied', icon: 'i-lucide-clipboard-check', color: 'success' })
+  toast.add({ title: t('wizard.linkCopied'), icon: 'i-lucide-clipboard-check', color: 'success' })
 }
 
 /* ——— navigation ——— */
 const steps = computed(() => [
-  { title: 'Details', icon: 'i-lucide-file-text', disabled: maxVisited.value < 0 },
-  { title: 'Ticket Types', icon: 'i-lucide-tags', disabled: maxVisited.value < 1 },
-  { title: 'Seat Assignment', icon: 'i-lucide-armchair', disabled: maxVisited.value < 2 },
-  { title: 'Publish', icon: 'i-lucide-rocket', disabled: maxVisited.value < 3 }
+  { title: t('wizard.stepDetails'), icon: 'i-lucide-file-text', disabled: maxVisited.value < 0 },
+  { title: t('wizard.stepTicketTypes'), icon: 'i-lucide-tags', disabled: maxVisited.value < 1 },
+  { title: t('wizard.stepSeatAssignment'), icon: 'i-lucide-armchair', disabled: maxVisited.value < 2 },
+  { title: t('wizard.stepPublish'), icon: 'i-lucide-rocket', disabled: maxVisited.value < 3 }
 ])
 
 const next = () => {
@@ -350,12 +351,12 @@ const leaveWizard = () => {
    step 2+ (or an existing draft) is already saved → leave with a toast */
 const requestClose = () => {
   if (draftSlug.value) {
-    toast.add({ title: 'Saved to drafts', icon: 'i-lucide-save', color: 'neutral' })
+    toast.add({ title: t('wizard.savedToDrafts'), icon: 'i-lucide-save', color: 'neutral' })
     navigateTo('/')
   } else if (step.value === 0) {
     discardOpen.value = true
   } else {
-    toast.add({ title: 'Saved to drafts', icon: 'i-lucide-save', color: 'neutral' })
+    toast.add({ title: t('wizard.savedToDrafts'), icon: 'i-lucide-save', color: 'neutral' })
     navigateTo('/')
   }
 }
@@ -371,7 +372,7 @@ const confirmDeleteDraft = () => {
   const title = draftEvent.value?.title
   adminEvents.value = adminEvents.value.filter(e => e.slug !== draftSlug.value)
   deleteDraftOpen.value = false
-  toast.add({ title: 'Draft deleted', description: title ? `"${title}" was removed.` : undefined, icon: 'i-lucide-trash-2', color: 'neutral' })
+  toast.add({ title: t('wizard.draftDeleted'), description: title ? t('wizard.draftDeletedDesc', { title }) : undefined, icon: 'i-lucide-trash-2', color: 'neutral' })
   navigateTo('/')
 }
 
@@ -382,7 +383,7 @@ onMounted(() => {
 const goTo = (s: number) => { step.value = s }
 
 const publish = () => {
-  toast.add({ title: 'Event published', description: `${form.title} is now live on your storefront.`, icon: 'i-lucide-check-circle', color: 'success' })
+  toast.add({ title: t('wizard.eventPublished'), description: t('wizard.eventPublishedDesc', { title: form.title }), icon: 'i-lucide-check-circle', color: 'success' })
   navigateTo('/')
 }
 
@@ -431,9 +432,9 @@ const prefill = () => {
 
     <UContainer class="max-w-6xl pb-24">
       <UPageHeader
-        headline="Events"
-        :title="draftSlug ? 'Continue setup' : 'Create event'"
-        :description="draftSlug ? 'Finish setting up your draft — it stays saved until you publish.' : 'Set up a new ticketed event for your storefront.'"
+        :headline="t('wizard.headline')"
+        :title="draftSlug ? t('wizard.titleContinue') : t('wizard.titleCreate')"
+        :description="draftSlug ? t('wizard.descContinue') : t('wizard.descCreate')"
         :ui="{ root: 'border-none py-8' }"
       >
         <template #links>
@@ -442,7 +443,7 @@ const prefill = () => {
             color="neutral"
             variant="ghost"
             square
-            aria-label="Close"
+            :aria-label="t('wizard.close')"
             @click="requestClose"
           />
         </template>
@@ -455,22 +456,22 @@ const prefill = () => {
         <div class="flex flex-col gap-6 min-w-0">
           <UPageCard variant="outline">
             <div class="flex flex-col gap-6">
-              <UFormField label="Event title" required help="Shown on the storefront and on tickets.">
-                <UInput v-model="form.title" size="lg" placeholder="Czech Volleyball Cup 2026" class="w-full" />
+              <UFormField :label="t('wizard.eventTitle')" required :help="t('wizard.eventTitleHelp')">
+                <UInput v-model="form.title" size="lg" :placeholder="t('wizard.eventTitlePlaceholder')" class="w-full" />
               </UFormField>
 
-              <UFormField label="Description">
-                <UTextarea v-model="form.description" :rows="4" placeholder="What should buyers know about this event?" class="w-full" />
+              <UFormField :label="t('wizard.description')">
+                <UTextarea v-model="form.description" :rows="4" :placeholder="t('wizard.descriptionPlaceholder')" class="w-full" />
               </UFormField>
 
               <div class="grid sm:grid-cols-2 gap-6">
-                <UFormField label="Starts" required help="Dates are locked after publishing.">
+                <UFormField :label="t('wizard.starts')" required :help="t('wizard.startsHelp')">
                   <div class="flex gap-2">
                     <UInputDate v-model="form.startDate" locale="cs-CZ" class="flex-1" />
                     <UInputTime v-model="form.startTime" locale="cs-CZ" class="w-24" />
                   </div>
                 </UFormField>
-                <UFormField label="Ends" required>
+                <UFormField :label="t('wizard.ends')" required>
                   <div class="flex gap-2">
                     <UInputDate v-model="form.endDate" locale="cs-CZ" class="flex-1" />
                     <UInputTime v-model="form.endTime" locale="cs-CZ" class="w-24" />
@@ -482,15 +483,15 @@ const prefill = () => {
 
           <UPageCard
             variant="outline"
-            title="Venue"
-            description="Halls across Czechia, seat layouts managed by the Tickitify team."
+            :title="t('wizard.venue')"
+            :description="t('wizard.venueDesc')"
           >
-            <UFormField label="Where does the event take place?" required class="mt-2">
+            <UFormField :label="t('wizard.venueQuestion')" required class="mt-2">
               <USelectMenu
                 v-model="form.venueId"
                 :items="venueItems"
                 value-key="value"
-                placeholder="Search venues — O2 Arena, Vodova, Werk…"
+                :placeholder="t('wizard.venuePlaceholder')"
                 icon="i-lucide-search"
                 size="lg"
                 class="w-full"
@@ -501,7 +502,7 @@ const prefill = () => {
               <UIcon name="i-lucide-building-2" class="size-5 shrink-0 text-dimmed mt-0.5" />
               <div class="min-w-0">
                 <p class="font-medium text-highlighted">{{ venue.name }}</p>
-                <p class="text-sm text-muted mt-0.5">{{ venue.address }} · capacity {{ venueCapacity(venue).toLocaleString('cs-CZ') }}</p>
+                <p class="text-sm text-muted mt-0.5">{{ venue.address }} · {{ t('wizard.capacity') }} {{ venueCapacity(venue).toLocaleString('cs-CZ') }}</p>
               </div>
             </div>
           </UPageCard>
@@ -521,40 +522,40 @@ const prefill = () => {
       <div v-else-if="step === 1" class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
         <UPageCard
           variant="outline"
-          title="Ticket types"
-          description="Define the price tiers buyers can choose from. Names can't be changed after the event is created."
+          :title="t('wizard.ticketTypesTitle')"
+          :description="t('wizard.ticketTypesDesc')"
         >
           <!-- column headers -->
           <div class="hidden sm:flex items-center gap-3 mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
             <span class="w-2.5" />
-            <span class="flex-1">Ticket type</span>
-            <span class="w-36">Price</span>
-            <span class="w-36">Assigned</span>
+            <span class="flex-1">{{ t('wizard.colTicketType') }}</span>
+            <span class="w-36">{{ t('wizard.colPrice') }}</span>
+            <span class="w-36">{{ t('wizard.colAssigned') }}</span>
             <span class="w-8" />
           </div>
 
           <div class="flex flex-col divide-y divide-default">
-            <div v-for="t in form.types" :key="t.id" class="flex flex-wrap sm:flex-nowrap items-center gap-3 py-3">
-              <span class="size-2.5 rounded-full shrink-0" :class="typeStyles[t.id]?.bg" />
+            <div v-for="tt in form.types" :key="tt.id" class="flex flex-wrap sm:flex-nowrap items-center gap-3 py-3">
+              <span class="size-2.5 rounded-full shrink-0" :class="typeStyles[tt.id]?.bg" />
               <UInput
-                v-model="t.name"
-                placeholder="VIP, Standard, Student…"
-                :color="rowIssue(t) === 'name' ? 'error' : undefined"
-                :highlight="rowIssue(t) === 'name'"
+                v-model="tt.name"
+                :placeholder="t('wizard.namePlaceholder')"
+                :color="rowIssue(tt) === 'name' ? 'error' : undefined"
+                :highlight="rowIssue(tt) === 'name'"
                 class="flex-1 min-w-36"
               />
               <UInputNumber
-                v-model="t.price"
+                v-model="tt.price"
                 :min="0"
                 :step="50"
                 :format-options="{ maximumFractionDigits: 0 }"
-                placeholder="400"
-                :color="rowIssue(t) === 'price' ? 'error' : undefined"
-                :highlight="rowIssue(t) === 'price'"
+                :placeholder="t('wizard.pricePlaceholder')"
+                :color="rowIssue(tt) === 'price' ? 'error' : undefined"
+                :highlight="rowIssue(tt) === 'price'"
                 class="w-36"
               />
-              <span class="w-36 text-sm tabular-nums" :class="assignedLabel(t.id) ? 'text-default' : 'text-dimmed'">
-                {{ assignedLabel(t.id) ?? '—' }}
+              <span class="w-36 text-sm tabular-nums" :class="assignedLabel(tt.id) ? 'text-default' : 'text-dimmed'">
+                {{ assignedLabel(tt.id) ?? '—' }}
               </span>
               <UButton
                 icon="i-lucide-trash-2"
@@ -562,15 +563,15 @@ const prefill = () => {
                 variant="ghost"
                 size="sm"
                 :disabled="form.types.length === 1"
-                aria-label="Remove ticket type"
-                @click="removeType(t.id)"
+                :aria-label="t('wizard.removeTicketType')"
+                @click="removeType(tt.id)"
               />
             </div>
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
             <UButton
-              label="Add ticket type"
+              :label="t('wizard.addTicketType')"
               icon="i-lucide-plus"
               color="neutral"
               variant="subtle"
@@ -578,32 +579,32 @@ const prefill = () => {
             />
             <p v-if="incompleteCount" class="flex items-center gap-1.5 text-sm text-warning">
               <UIcon name="i-lucide-alert-triangle" class="size-4 shrink-0" />
-              {{ incompleteCount }} {{ incompleteCount === 1 ? 'type needs' : 'types need' }} a name and a price above 0 — complete or remove to continue
+              {{ incompleteCount === 1 ? t('wizard.incompleteOne', { n: incompleteCount }) : t('wizard.incompleteMany', { n: incompleteCount }) }}
             </p>
           </div>
         </UPageCard>
 
-        <UPageCard variant="outline" title="Pricing rules" class="lg:sticky lg:top-24">
+        <UPageCard variant="outline" :title="t('wizard.pricingRules')" class="lg:sticky lg:top-24">
           <ul class="flex flex-col gap-4 mt-2">
             <li class="flex gap-2.5">
               <UIcon name="i-lucide-circle-plus" class="size-4.5 shrink-0 text-dimmed mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-highlighted">Currency</p>
-                <p class="text-sm text-muted">All tiers are priced in CZK.</p>
+                <p class="text-sm font-medium text-highlighted">{{ t('wizard.currency') }}</p>
+                <p class="text-sm text-muted">{{ t('wizard.currencyDesc') }}</p>
               </div>
             </li>
             <li class="flex gap-2.5">
               <UIcon name="i-lucide-circle-plus" class="size-4.5 shrink-0 text-dimmed mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-highlighted">Buyer service fee</p>
-                <p class="text-sm text-muted">A service fee is added at checkout — buyers see the final price before paying.</p>
+                <p class="text-sm font-medium text-highlighted">{{ t('wizard.buyerFee') }}</p>
+                <p class="text-sm text-muted">{{ t('wizard.buyerFeeDesc') }}</p>
               </div>
             </li>
             <li class="flex gap-2.5">
               <UIcon name="i-lucide-circle-plus" class="size-4.5 shrink-0 text-dimmed mt-0.5" />
               <div>
-                <p class="text-sm font-medium text-highlighted">Platform commission</p>
-                <p class="text-sm text-muted">7% is deducted from your payout on every sold ticket.</p>
+                <p class="text-sm font-medium text-highlighted">{{ t('wizard.commission') }}</p>
+                <p class="text-sm text-muted">{{ t('wizard.commissionDesc') }}</p>
               </div>
             </li>
           </ul>
@@ -612,16 +613,16 @@ const prefill = () => {
 
           <div v-if="validTypes.length" class="flex flex-col gap-2">
             <div
-              v-for="t in validTypes"
-              :key="t.id"
+              v-for="tt in validTypes"
+              :key="tt.id"
               class="flex items-center justify-between gap-3 rounded-md bg-elevated px-3 py-2 text-sm"
             >
-              <span class="text-muted">You keep on a {{ t.price }} CZK ticket</span>
-              <span class="font-semibold text-highlighted tabular-nums">{{ netFor(t.price!) }} CZK</span>
+              <span class="text-muted">{{ t('wizard.youKeepOn', { price: tt.price! }) }}</span>
+              <span class="font-semibold text-highlighted tabular-nums">{{ netFor(tt.price!) }} CZK</span>
             </div>
           </div>
           <div v-else class="flex items-center justify-between gap-3 rounded-md bg-elevated px-3 py-2 text-sm">
-            <span class="text-muted">You keep on a 400 CZK ticket</span>
+            <span class="text-muted">{{ t('wizard.youKeepOn', { price: 400 }) }}</span>
             <span class="font-semibold text-highlighted tabular-nums">372 CZK</span>
           </div>
         </UPageCard>
@@ -633,16 +634,16 @@ const prefill = () => {
           color="info"
           variant="subtle"
           icon="i-lucide-info"
-          :title="activeStanding ? 'Standing sectors don\'t use a seat map' : 'Unassigned seats are your private hold'"
+          :title="activeStanding ? t('wizard.standingNoMapTitle') : t('wizard.unassignedHoldTitle')"
           :description="activeStanding
-            ? 'Set a sellable capacity and the ticket type sold for entry.'
-            : 'Seats without a ticket type don\'t appear on your storefront — a simple way to hold seats for press, sponsors or guests. Assign a type when you\'re ready to sell them.'"
+            ? t('wizard.standingNoMapDesc')
+            : t('wizard.unassignedHoldDesc')"
         />
 
         <div class="grid lg:grid-cols-[220px_minmax(0,1fr)_300px] gap-5 items-start">
           <!-- sector rail -->
           <UPageCard variant="outline" :ui="{ container: 'p-2.5 sm:p-2.5' }">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-muted px-2 pt-1 pb-2">Sectors</p>
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-muted px-2 pt-1 pb-2">{{ t('wizard.sectors') }}</p>
             <div class="flex flex-col gap-1">
               <button
                 v-for="sid in form.sectorsSelected"
@@ -655,7 +656,7 @@ const prefill = () => {
                 <span class="block text-sm font-medium text-highlighted">
                   {{ [...(venue?.seating ?? []), ...(venue?.standing ?? [])].find(x => x.id === sid)?.name }}
                 </span>
-                <span class="block text-xs mt-0.5" :class="railStatus({ id: sid }).includes('done') ? 'text-success' : 'text-muted'">
+                <span class="block text-xs mt-0.5" :class="railStatus({ id: sid }) === t('wizard.railDone') ? 'text-success' : 'text-muted'">
                   {{ railStatus({ id: sid }) }}
                 </span>
               </button>
@@ -668,13 +669,13 @@ const prefill = () => {
               <div>
                 <p class="font-semibold text-highlighted">{{ activeSeating.name }}</p>
                 <p class="text-xs text-muted mt-0.5 tabular-nums">
-                  {{ sectorAssigned(activeSeating.id).toLocaleString('cs-CZ') }} assigned ·
-                  {{ (activeSeating.rows * activeSeating.seats - sectorAssigned(activeSeating.id)).toLocaleString('cs-CZ') }} unassigned
+                  {{ sectorAssigned(activeSeating.id).toLocaleString('cs-CZ') }} {{ t('wizard.assignedSuffix') }} ·
+                  {{ (activeSeating.rows * activeSeating.seats - sectorAssigned(activeSeating.id)).toLocaleString('cs-CZ') }} {{ t('wizard.unassignedSuffix') }}
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <UButton label="Select unassigned" color="neutral" variant="outline" size="sm" @click="selectUnassigned(activeSeating)" />
-                <UButton label="Select all" color="neutral" variant="ghost" size="sm" @click="selectAll(activeSeating)" />
+                <UButton :label="t('wizard.selectUnassigned')" color="neutral" variant="outline" size="sm" @click="selectUnassigned(activeSeating)" />
+                <UButton :label="t('wizard.selectAll')" color="neutral" variant="ghost" size="sm" @click="selectAll(activeSeating)" />
               </div>
             </div>
 
@@ -692,17 +693,17 @@ const prefill = () => {
             <!-- legend -->
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
               <span class="flex items-center gap-1.5">
-                <span class="size-4 rounded bg-elevated" /> Unassigned
+                <span class="size-4 rounded bg-elevated" /> {{ t('wizard.legendUnassigned') }}
               </span>
-              <span v-for="t in validTypes" :key="t.id" class="flex items-center gap-1.5">
+              <span v-for="tt in validTypes" :key="tt.id" class="flex items-center gap-1.5">
                 <span
                   class="size-4 rounded flex items-center justify-center text-[9px] font-semibold"
-                  :class="[typeStyles[t.id]?.bg, typeStyles[t.id]?.text]"
-                >{{ typeStyles[t.id]?.letter }}</span>
-                {{ t.name }}
+                  :class="[typeStyles[tt.id]?.bg, typeStyles[tt.id]?.text]"
+                >{{ typeStyles[tt.id]?.letter }}</span>
+                {{ tt.name }}
               </span>
               <span class="flex items-center gap-1.5">
-                <span class="size-4 rounded bg-elevated ring-2 ring-primary ring-offset-1 ring-offset-(--ui-bg)" /> Selected
+                <span class="size-4 rounded bg-elevated ring-2 ring-primary ring-offset-1 ring-offset-(--ui-bg)" /> {{ t('wizard.legendSelected') }}
               </span>
             </div>
           </UPageCard>
@@ -710,27 +711,27 @@ const prefill = () => {
           <!-- standing sector: GA panel -->
           <UPageCard v-else-if="activeStanding" variant="outline" class="min-w-0">
             <div class="h-56 rounded-lg border-2 border-dashed border-accented bg-elevated/40 flex items-center justify-center mt-1">
-              <p class="text-sm text-muted">{{ activeStanding.name }} · general admission</p>
+              <p class="text-sm text-muted">{{ activeStanding.name }} · {{ t('wizard.generalAdmission') }}</p>
             </div>
             <p class="text-xs text-dimmed text-center mt-3">
-              No seat numbers are issued. Buyers are admitted first-come up to the capacity you set.
+              {{ t('wizard.standingNoSeatNumbers') }}
             </p>
           </UPageCard>
 
           <UPageCard v-else variant="subtle">
-            <UEmpty icon="i-lucide-armchair" title="No sector selected" description="Pick a sector on the left." variant="naked" />
+            <UEmpty icon="i-lucide-armchair" :title="t('wizard.noSectorSelected')" :description="t('wizard.noSectorSelectedDesc')" variant="naked" />
           </UPageCard>
 
           <!-- right panel: assignment / standing config -->
-          <UPageCard v-if="activeSeating" variant="outline" title="Assignment" class="lg:sticky lg:top-24">
+          <UPageCard v-if="activeSeating" variant="outline" :title="t('wizard.assignment')" class="lg:sticky lg:top-24">
             <div class="rounded-lg bg-elevated px-4 py-3.5 mt-2 flex items-baseline justify-between gap-2">
               <p>
                 <span class="text-2xl font-semibold text-highlighted tabular-nums">{{ selCount }}</span>
-                <span class="text-sm text-muted ml-1.5">seats selected</span>
+                <span class="text-sm text-muted ml-1.5">{{ t('wizard.seatsSelected') }}</span>
               </p>
               <UButton
                 v-if="selCount"
-                label="Clear"
+                :label="t('wizard.clear')"
                 color="neutral"
                 variant="link"
                 size="xs"
@@ -738,28 +739,28 @@ const prefill = () => {
               />
             </div>
 
-            <UFormField label="Assign ticket type" class="mt-4">
-              <USelect v-model="assignTypeId" :items="typeOptions" placeholder="Select type" class="w-full" />
+            <UFormField :label="t('wizard.assignTicketType')" class="mt-4">
+              <USelect v-model="assignTypeId" :items="typeOptions" :placeholder="t('wizard.selectType')" class="w-full" />
             </UFormField>
 
-            <UFormField label="Bulk select" class="mt-3">
+            <UFormField :label="t('wizard.bulkSelect')" class="mt-3">
               <div class="flex gap-2">
-                <USelect v-model="rangeFrom" :items="rowOptions" placeholder="From" class="flex-1" />
-                <USelect v-model="rangeTo" :items="rowOptions" placeholder="To" class="flex-1" />
-                <UButton label="Add" color="neutral" variant="outline" :disabled="rangeFrom === undefined || rangeTo === undefined" @click="addRange" />
+                <USelect v-model="rangeFrom" :items="rowOptions" :placeholder="t('wizard.bulkFrom')" class="flex-1" />
+                <USelect v-model="rangeTo" :items="rowOptions" :placeholder="t('wizard.bulkTo')" class="flex-1" />
+                <UButton :label="t('wizard.add')" color="neutral" variant="outline" :disabled="rangeFrom === undefined || rangeTo === undefined" @click="addRange" />
               </div>
             </UFormField>
 
             <div class="flex flex-col gap-2 mt-5">
               <UButton
-                label="Apply assignment"
+                :label="t('wizard.applyAssignment')"
                 color="primary"
                 block
                 :disabled="!selCount || !assignTypeId"
                 @click="applyAssignment"
               />
               <UButton
-                label="Mark unassigned"
+                :label="t('wizard.markUnassigned')"
                 color="neutral"
                 variant="outline"
                 block
@@ -772,35 +773,35 @@ const prefill = () => {
               color="warning"
               variant="subtle"
               icon="i-lucide-eye-off"
-              description="Unassigned seats are unavailable on the storefront."
+              :description="t('wizard.unassignedUnavailable')"
               class="mt-4"
             />
           </UPageCard>
 
-          <UPageCard v-else-if="activeStanding" variant="outline" title="Standing config" class="lg:sticky lg:top-24">
-            <UFormField label="Sold as ticket type" class="mt-3">
+          <UPageCard v-else-if="activeStanding" variant="outline" :title="t('wizard.standingConfig')" class="lg:sticky lg:top-24">
+            <UFormField :label="t('wizard.soldAsTicketType')" class="mt-3">
               <USelect
                 :model-value="form.standingConfig[activeStanding.id]?.typeId || undefined"
                 :items="typeOptions"
-                placeholder="Select type"
+                :placeholder="t('wizard.selectType')"
                 class="w-full"
                 @update:model-value="(v: any) => form.standingConfig[activeStanding!.id] = { typeId: v, capacity: form.standingConfig[activeStanding!.id]?.capacity ?? null }"
               />
             </UFormField>
 
-            <UFormField label="Sellable capacity" help="Total tickets sold for this zone." class="mt-3">
+            <UFormField :label="t('wizard.sellableCapacity')" :help="t('wizard.sellableCapacityHelp')" class="mt-3">
               <UInputNumber
                 :model-value="form.standingConfig[activeStanding.id]?.capacity ?? undefined"
                 :min="1"
                 :max="activeStanding.max"
                 :step="50"
-                placeholder="600"
+                :placeholder="t('wizard.sellableCapacityPlaceholder')"
                 class="w-full"
                 @update:model-value="(v: any) => form.standingConfig[activeStanding!.id] = { typeId: form.standingConfig[activeStanding!.id]?.typeId ?? '', capacity: v }"
               />
             </UFormField>
 
-            <UFormField label="Venue max capacity" class="mt-3">
+            <UFormField :label="t('wizard.venueMaxCapacity')" class="mt-3">
               <UInput :model-value="activeStanding.max.toLocaleString('cs-CZ')" disabled class="w-full" />
             </UFormField>
 
@@ -808,7 +809,7 @@ const prefill = () => {
               color="warning"
               variant="subtle"
               icon="i-lucide-info"
-              description="Sellable capacity cannot exceed the venue's certified max for this sector."
+              :description="t('wizard.capacityExceedWarning')"
               class="mt-4"
             />
           </UPageCard>
@@ -822,21 +823,21 @@ const prefill = () => {
           <!-- event summary -->
           <UPageCard variant="outline">
             <div class="flex items-center justify-between gap-3">
-              <p class="font-semibold text-highlighted">Event</p>
-              <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(0)" />
+              <p class="font-semibold text-highlighted">{{ t('wizard.eventSection') }}</p>
+              <UButton :label="t('wizard.edit')" color="primary" variant="link" size="sm" @click="goTo(0)" />
             </div>
             <div class="flex items-start gap-5 mt-4">
               <dl class="flex-1 flex flex-col gap-2.5 text-sm min-w-0">
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Title</dt>
+                  <dt class="text-muted">{{ t('wizard.sumTitle') }}</dt>
                   <dd class="font-medium text-highlighted text-right truncate">{{ form.title || '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Organizer</dt>
+                  <dt class="text-muted">{{ t('wizard.sumOrganizer') }}</dt>
                   <dd class="font-medium text-highlighted text-right">Czech Volleyball Federation</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Schedule</dt>
+                  <dt class="text-muted">{{ t('wizard.sumSchedule') }}</dt>
                   <dd class="font-medium text-highlighted text-right tabular-nums">{{ scheduleLabel }}</dd>
                 </div>
               </dl>
@@ -847,23 +848,23 @@ const prefill = () => {
             <!-- venue summary -->
             <UPageCard variant="outline">
               <div class="flex items-center justify-between gap-3">
-                <p class="font-semibold text-highlighted">Venue</p>
-                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(0)" />
+                <p class="font-semibold text-highlighted">{{ t('wizard.sumVenue') }}</p>
+                <UButton :label="t('wizard.edit')" color="primary" variant="link" size="sm" @click="goTo(0)" />
               </div>
               <dl class="flex flex-col gap-2.5 text-sm mt-4">
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Venue</dt>
+                  <dt class="text-muted">{{ t('wizard.sumVenue') }}</dt>
                   <dd class="font-medium text-highlighted text-right">{{ venue?.name ?? '—' }}</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Sectors</dt>
-                  <dd class="font-medium text-highlighted text-right">{{ selectedSeating.length }} seating · {{ selectedStanding.length }} standing</dd>
+                  <dt class="text-muted">{{ t('wizard.sumSectors') }}</dt>
+                  <dd class="font-medium text-highlighted text-right">{{ selectedSeating.length }} {{ t('wizard.sumSeating') }} · {{ selectedStanding.length }} {{ t('wizard.sumStanding') }}</dd>
                 </div>
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted">Venue capacity</dt>
+                  <dt class="text-muted">{{ t('wizard.sumVenueCapacity') }}</dt>
                   <dd class="font-medium text-highlighted text-right tabular-nums">
                     {{ (seatedTotal + standingTotal).toLocaleString('cs-CZ') }}
-                    <span class="text-muted font-normal">· seats + standing</span>
+                    <span class="text-muted font-normal">{{ t('wizard.seatsPlusStanding') }}</span>
                   </dd>
                 </div>
               </dl>
@@ -872,16 +873,16 @@ const prefill = () => {
             <!-- ticket types summary -->
             <UPageCard variant="outline">
               <div class="flex items-center justify-between gap-3">
-                <p class="font-semibold text-highlighted">Ticket types</p>
-                <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(1)" />
+                <p class="font-semibold text-highlighted">{{ t('wizard.sumTicketTypes') }}</p>
+                <UButton :label="t('wizard.edit')" color="primary" variant="link" size="sm" @click="goTo(1)" />
               </div>
               <ul class="flex flex-col gap-2.5 text-sm mt-4">
-                <li v-for="t in validTypes" :key="t.id" class="flex items-center justify-between gap-4">
+                <li v-for="tt in validTypes" :key="tt.id" class="flex items-center justify-between gap-4">
                   <span class="flex items-center gap-2 font-medium text-highlighted">
-                    <span class="size-2 rounded-full" :class="typeStyles[t.id]?.bg" />
-                    {{ t.name }}
+                    <span class="size-2 rounded-full" :class="typeStyles[tt.id]?.bg" />
+                    {{ tt.name }}
                   </span>
-                  <span class="text-muted tabular-nums">{{ t.price }} CZK</span>
+                  <span class="text-muted tabular-nums">{{ tt.price }} CZK</span>
                 </li>
               </ul>
             </UPageCard>
@@ -890,25 +891,25 @@ const prefill = () => {
           <!-- inventory -->
           <UPageCard variant="outline">
             <div class="flex items-center justify-between gap-3">
-              <p class="font-semibold text-highlighted">Inventory</p>
-              <UButton label="Edit" color="primary" variant="link" size="sm" @click="goTo(2)" />
+              <p class="font-semibold text-highlighted">{{ t('wizard.inventory') }}</p>
+              <UButton :label="t('wizard.edit')" color="primary" variant="link" size="sm" @click="goTo(2)" />
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
               <div class="rounded-lg ring ring-default p-4">
                 <p class="text-2xl font-semibold text-highlighted tabular-nums">{{ seatedTotal.toLocaleString('cs-CZ') }}</p>
-                <p class="text-xs text-muted mt-1">Assigned seats</p>
+                <p class="text-xs text-muted mt-1">{{ t('wizard.assignedSeats') }}</p>
               </div>
               <div class="rounded-lg ring ring-default p-4">
                 <p class="text-2xl font-semibold text-highlighted tabular-nums">{{ standingTotal.toLocaleString('cs-CZ') }}</p>
-                <p class="text-xs text-muted mt-1">Standing capacity</p>
+                <p class="text-xs text-muted mt-1">{{ t('wizard.standingCapacity') }}</p>
               </div>
               <div class="rounded-lg ring ring-default p-4">
                 <p class="text-2xl font-semibold text-highlighted tabular-nums">{{ validTypes.length }}</p>
-                <p class="text-xs text-muted mt-1">Ticket types</p>
+                <p class="text-xs text-muted mt-1">{{ t('wizard.ticketTypesStat') }}</p>
               </div>
               <div class="rounded-lg ring ring-default p-4">
                 <p class="text-2xl font-semibold text-highlighted tabular-nums">{{ form.sectorsSelected.length }}</p>
-                <p class="text-xs text-muted mt-1">Sectors</p>
+                <p class="text-xs text-muted mt-1">{{ t('wizard.sectorsStat') }}</p>
               </div>
             </div>
           </UPageCard>
@@ -916,7 +917,7 @@ const prefill = () => {
 
         <!-- right rail -->
         <div class="flex flex-col gap-6 lg:sticky lg:top-24">
-          <UPageCard variant="outline" title="Preflight checklist">
+          <UPageCard variant="outline" :title="t('wizard.preflightChecklist')">
             <ul class="flex flex-col gap-3 mt-2">
               <li v-for="c in preflight" :key="c.label" class="flex items-center gap-2.5 text-sm">
                 <UIcon
@@ -929,10 +930,10 @@ const prefill = () => {
             </ul>
           </UPageCard>
 
-          <UPageCard variant="outline" title="Storefront URL">
+          <UPageCard variant="outline" :title="t('wizard.storefrontUrl')">
             <UFieldGroup class="w-full mt-2">
               <UInput :model-value="storefrontUrl" readonly class="flex-1" />
-              <UButton icon="i-lucide-copy" color="neutral" variant="subtle" aria-label="Copy link" @click="copyUrl" />
+              <UButton icon="i-lucide-copy" color="neutral" variant="subtle" :aria-label="t('wizard.copyLink')" @click="copyUrl" />
             </UFieldGroup>
           </UPageCard>
         </div>
@@ -942,18 +943,18 @@ const prefill = () => {
       <div class="flex items-center justify-between mt-8">
         <div class="flex items-center gap-1">
           <UButton
-            :label="step === 0 ? 'Back to events' : 'Back'"
+            :label="step === 0 ? t('wizard.backToEvents') : t('wizard.back')"
             color="neutral"
             variant="ghost"
             @click="back"
           />
-          <UTooltip v-if="draftSlug" text="Delete draft">
+          <UTooltip v-if="draftSlug" :text="t('wizard.deleteDraft')">
             <UButton
               icon="i-lucide-trash-2"
               color="error"
               variant="ghost"
               square
-              aria-label="Delete draft"
+              :aria-label="t('wizard.deleteDraft')"
               @click="deleteDraftOpen = true"
             />
           </UTooltip>
@@ -962,7 +963,7 @@ const prefill = () => {
         <div class="flex items-center gap-3">
           <template v-if="step < 3">
             <UButton
-              label="Continue"
+              :label="t('wizard.continue')"
               color="primary"
               :disabled="!stepValid"
               @click="next"
@@ -970,7 +971,7 @@ const prefill = () => {
           </template>
           <template v-else>
             <UButton
-              label="Publish event"
+              :label="t('wizard.publishEvent')"
               icon="i-lucide-rocket"
               color="primary"
               :disabled="!canPublish"
@@ -984,13 +985,13 @@ const prefill = () => {
     <!-- discard confirmation (step 1 — nothing saved as a draft yet) -->
     <UModal
       v-model:open="discardOpen"
-      title="Leave without saving?"
-      description="You're on the first step — this event hasn't been saved as a draft yet. Your changes will be lost."
+      :title="t('wizard.leaveTitle')"
+      :description="t('wizard.leaveDesc')"
     >
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton label="Stay" color="neutral" variant="ghost" @click="discardOpen = false" />
-          <UButton label="Leave" color="error" @click="leaveWizard" />
+          <UButton :label="t('wizard.stay')" color="neutral" variant="ghost" @click="discardOpen = false" />
+          <UButton :label="t('wizard.leave')" color="error" @click="leaveWizard" />
         </div>
       </template>
     </UModal>
@@ -998,13 +999,13 @@ const prefill = () => {
     <!-- delete draft confirmation -->
     <UModal
       v-model:open="deleteDraftOpen"
-      title="Delete this draft?"
-      :description="draftEvent ? `“${draftEvent.title}” will be removed for good. This can't be undone.` : `This draft will be removed for good. This can't be undone.`"
+      :title="t('wizard.deleteDraftTitle')"
+      :description="draftEvent ? t('wizard.deleteDraftDescNamed', { title: draftEvent.title }) : t('wizard.deleteDraftDesc')"
     >
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="ghost" @click="deleteDraftOpen = false" />
-          <UButton label="Delete draft" icon="i-lucide-trash-2" color="error" @click="confirmDeleteDraft" />
+          <UButton :label="t('wizard.cancel')" color="neutral" variant="ghost" @click="deleteDraftOpen = false" />
+          <UButton :label="t('wizard.deleteDraftConfirm')" icon="i-lucide-trash-2" color="error" @click="confirmDeleteDraft" />
         </div>
       </template>
     </UModal>
@@ -1012,7 +1013,7 @@ const prefill = () => {
     <!-- prototype-only: quick demo fill -->
     <div class="fixed bottom-5 right-5 z-50">
       <UButton
-        label="Prefill demo data"
+        :label="t('wizard.prefillDemo')"
         icon="i-lucide-wand-2"
         color="neutral"
         variant="solid"

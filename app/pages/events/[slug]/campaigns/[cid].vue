@@ -7,6 +7,7 @@ import {
 } from '~/utils/campaignAnalytics'
 import type { TrackedLink } from '~/utils/campaignAnalytics'
 
+const t = useT()
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 const cid = computed(() => String(route.params.cid))
@@ -25,7 +26,7 @@ const toast = useToast()
 
 const copyLink = async (l: { id: string, source: string, medium: string }) => {
   await navigator.clipboard.writeText(trackingUrl(slug.value, campaign.value.id, l))
-  toast.add({ title: 'Tracking link copied', description: 'Paste it wherever this promo goes live.', icon: 'i-lucide-clipboard-check', color: 'success' })
+  toast.add({ title: t('campaign.toastLinkCopiedTitle'), description: t('campaign.toastLinkCopiedDesc'), icon: 'i-lucide-clipboard-check', color: 'success' })
 }
 
 /* ——— link table ——— */
@@ -50,10 +51,10 @@ const sortHeader = (label: string) => ({ column }: any) =>
 const numCell = (key: 'viewed' | 'initiated' | 'purchased') => ({ row }: any) =>
   h('span', { class: 'block tabular-nums ' + (row.original[key] === 0 ? 'text-dimmed' : 'text-default') }, fmtN(row.original[key]))
 
-const columns: TableColumn<TrackedLink>[] = [
+const columns = computed<TableColumn<TrackedLink>[]>(() => [
   {
     accessorKey: 'label',
-    header: 'Tracking link',
+    header: t('campaign.colLink'),
     cell: ({ row }) => h('div', { class: 'flex flex-col gap-0.5 min-w-0' }, [
       h('span', { class: 'font-medium text-highlighted' }, row.original.label),
       h('span', { class: 'font-mono text-xs text-dimmed truncate max-w-[340px]' }, trackingUrl(slug.value, campaign.value.id, row.original).replace(/^https:\/\//, ''))
@@ -61,41 +62,41 @@ const columns: TableColumn<TrackedLink>[] = [
   },
   {
     accessorKey: 'source',
-    header: 'Source',
+    header: t('campaign.colSource'),
     cell: ({ row }) => h(UBadge, { label: row.original.source, color: 'neutral', variant: 'outline', size: 'sm' })
   },
   {
     accessorKey: 'medium',
-    header: 'Medium',
+    header: t('campaign.colMedium'),
     cell: ({ row }) => h(UBadge, { label: row.original.medium, color: 'neutral', variant: 'subtle', size: 'sm' })
   },
-  { accessorKey: 'viewed', header: sortHeader('Viewed'), cell: numCell('viewed') },
-  { accessorKey: 'initiated', header: sortHeader('Initiated checkout'), cell: numCell('initiated') },
-  { accessorKey: 'purchased', header: sortHeader('Purchased'), cell: numCell('purchased') },
+  { accessorKey: 'viewed', header: sortHeader(t('campaign.colViewed')), cell: numCell('viewed') },
+  { accessorKey: 'initiated', header: sortHeader(t('campaign.colInitiated')), cell: numCell('initiated') },
+  { accessorKey: 'purchased', header: sortHeader(t('campaign.colPurchased')), cell: numCell('purchased') },
   {
     id: 'copy',
-    header: () => h('span', { class: 'sr-only' }, 'Copy'),
+    header: () => h('span', { class: 'sr-only' }, t('campaign.colCopy')),
     cell: ({ row }) => h(UButton, {
-      'label': 'Copy link',
+      'label': t('campaign.copyLink'),
       'icon': 'i-lucide-copy',
       'color': 'neutral',
       'variant': 'subtle',
       'size': 'xs',
-      'aria-label': 'Copy tracking link',
+      'aria-label': t('campaign.copyLinkAria'),
       'onClick': (e: Event) => {
         e.stopPropagation()
         copyLink(row.original)
       }
     })
   }
-]
+])
 
 /* ——— shared source/medium toggle for both pies ——— */
 const groupBy = ref<'source' | 'medium'>('source')
-const groupTabs = [
-  { label: 'By source', value: 'source' },
-  { label: 'By medium', value: 'medium' }
-]
+const groupTabs = computed(() => [
+  { label: t('campaign.tabBySource'), value: 'source' },
+  { label: t('campaign.tabByMedium'), value: 'medium' }
+])
 
 const grouped = computed(() => groupLinks(campaign.value.links, groupBy.value))
 const trafficItems = computed(() => grouped.value.map(g => ({ label: g.key, value: g.viewed, color: g.color.cssVar, dot: g.color.dot })))
@@ -135,12 +136,12 @@ const createLink = () => {
   linkForm.label = ''
   linkForm.source = ''
   linkForm.medium = ''
-  toast.add({ title: 'Tracking link created', description: 'Copy it from the list and share — numbers start at zero.', icon: 'i-lucide-link', color: 'success' })
+  toast.add({ title: t('campaign.toastLinkCreatedTitle'), description: t('campaign.toastLinkCreatedDesc'), icon: 'i-lucide-link', color: 'success' })
 }
 
 const copyPreview = async () => {
   await navigator.clipboard.writeText(previewUrl.value)
-  toast.add({ title: 'Link copied', icon: 'i-lucide-clipboard-check', color: 'success' })
+  toast.add({ title: t('campaign.toastCopiedTitle'), icon: 'i-lucide-clipboard-check', color: 'success' })
 }
 </script>
 
@@ -151,7 +152,7 @@ const copyPreview = async () => {
     <UContainer class="max-w-6xl pb-24">
       <UBreadcrumb
         :items="[
-          { label: 'Events', icon: 'i-lucide-ticket', to: '/' },
+          { label: t('campaign.breadcrumbEvents'), icon: 'i-lucide-ticket', to: '/' },
           { label: eventMeta.title, to: `/events/${slug}` },
           { label: campaign.name }
         ]"
@@ -160,7 +161,7 @@ const copyPreview = async () => {
 
       <UPageHeader
         :title="campaign.name"
-        :description="`Campaign · ${campaign.links.length} tracked ${campaign.links.length === 1 ? 'link' : 'links'} · ${eventMeta.title}`"
+        :description="t('campaign.headerDesc', { n: campaign.links.length, links: campaign.links.length === 1 ? t('campaign.linkSingular') : t('campaign.linkPlural'), event: eventMeta.title })"
         :ui="{ root: 'border-none pt-4 pb-6' }"
       />
 
@@ -170,10 +171,10 @@ const copyPreview = async () => {
         <UPageCard variant="outline">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p class="text-base font-semibold text-highlighted">Links</p>
-              <p class="text-[15px] text-muted mt-1">Every tracked URL in this campaign — copy one and share it.</p>
+              <p class="text-base font-semibold text-highlighted">{{ t('campaign.linksTitle') }}</p>
+              <p class="text-[15px] text-muted mt-1">{{ t('campaign.linksDesc') }}</p>
             </div>
-            <UButton label="New tracking link" icon="i-lucide-plus" size="sm" @click="linkModal = true" />
+            <UButton :label="t('campaign.newLink')" icon="i-lucide-plus" size="sm" @click="linkModal = true" />
           </div>
 
           <UTable
@@ -187,9 +188,9 @@ const copyPreview = async () => {
           <UEmpty
             v-else
             icon="i-lucide-link"
-            title="No links yet"
-            description="Create your first tracking link, share it in a post or email, and the funnel starts counting."
-            :actions="[{ label: 'New tracking link', icon: 'i-lucide-plus', onClick: () => { linkModal = true } }]"
+            :title="t('campaign.emptyTitle')"
+            :description="t('campaign.emptyDesc')"
+            :actions="[{ label: t('campaign.newLink'), icon: 'i-lucide-plus', onClick: () => { linkModal = true } }]"
             class="py-10"
           />
         </UPageCard>
@@ -197,8 +198,8 @@ const copyPreview = async () => {
         <template v-if="campaign.links.length">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-semibold text-highlighted">Breakdown</h2>
-              <p class="text-sm text-muted mt-0.5">Same visitors, sliced two ways — both charts follow one toggle.</p>
+              <h2 class="text-lg font-semibold text-highlighted">{{ t('campaign.breakdownTitle') }}</h2>
+              <p class="text-sm text-muted mt-0.5">{{ t('campaign.breakdownDesc') }}</p>
             </div>
             <UTabs
               v-model="groupBy"
@@ -211,11 +212,11 @@ const copyPreview = async () => {
           </div>
 
           <div class="grid sm:grid-cols-2 gap-6">
-            <UPageCard variant="outline" title="Traffic" :description="`Viewed users by ${groupBy}.`">
-              <DonutChart :items="trafficItems" center-label="Viewed" class="mt-3" />
+            <UPageCard variant="outline" :title="t('campaign.trafficTitle')" :description="t('campaign.trafficDesc', { by: groupBy === 'source' ? t('campaign.groupSource') : t('campaign.groupMedium') })">
+              <DonutChart :items="trafficItems" :center-label="t('campaign.trafficCenter')" class="mt-3" />
             </UPageCard>
-            <UPageCard variant="outline" title="Sales" :description="`Purchased users by ${groupBy}.`">
-              <DonutChart :items="salesItems" center-label="Purchased" class="mt-3" />
+            <UPageCard variant="outline" :title="t('campaign.salesTitle')" :description="t('campaign.salesDesc', { by: groupBy === 'source' ? t('campaign.groupSource') : t('campaign.groupMedium') })">
+              <DonutChart :items="salesItems" :center-label="t('campaign.salesCenter')" class="mt-3" />
             </UPageCard>
           </div>
         </template>
@@ -225,32 +226,32 @@ const copyPreview = async () => {
     <!-- ════ new tracking link modal ════ -->
     <UModal
       v-model:open="linkModal"
-      title="New tracking link"
-      description="One trackable URL — tagged with a source and a medium."
+      :title="t('campaign.modalTitle')"
+      :description="t('campaign.modalDesc')"
     >
       <template #body>
         <div class="flex flex-col gap-4">
-          <UFormField label="Label" required help="For your eyes only — name the placement.">
-            <UInput v-model="linkForm.label" placeholder="Story · countdown sticker" class="w-full" autofocus />
+          <UFormField :label="t('campaign.labelField')" required :help="t('campaign.labelHelp')">
+            <UInput v-model="linkForm.label" :placeholder="t('campaign.labelPlaceholder')" class="w-full" autofocus />
           </UFormField>
 
           <div class="grid grid-cols-2 gap-4">
-            <UFormField label="Source" required help="The named place — type your own if missing.">
+            <UFormField :label="t('campaign.sourceField')" required :help="t('campaign.sourceHelp')">
               <UInputMenu
                 v-model="linkForm.source"
                 :items="sourceItems"
                 create-item
-                placeholder="instagram"
+                :placeholder="t('campaign.sourcePlaceholder')"
                 class="w-full"
                 @create="onCreateSource"
               />
             </UFormField>
-            <UFormField label="Medium" required help="The channel category.">
-              <USelect v-model="linkForm.medium" :items="MEDIUMS" placeholder="social" class="w-full" />
+            <UFormField :label="t('campaign.mediumField')" required :help="t('campaign.mediumHelp')">
+              <USelect v-model="linkForm.medium" :items="MEDIUMS" :placeholder="t('campaign.mediumPlaceholder')" class="w-full" />
             </UFormField>
           </div>
 
-          <UFormField label="Your trackable URL" help="Generated automatically — this is what you share.">
+          <UFormField :label="t('campaign.urlField')" :help="t('campaign.urlHelp')">
             <div class="flex items-start gap-2">
               <div class="flex-1 rounded-md bg-elevated px-3 py-2.5 font-mono text-xs text-muted break-all">
                 {{ previewUrl }}
@@ -259,7 +260,7 @@ const copyPreview = async () => {
                 icon="i-lucide-copy"
                 color="neutral"
                 variant="subtle"
-                aria-label="Copy URL"
+                :aria-label="t('campaign.copyUrlAria')"
                 :disabled="!linkValid"
                 @click="copyPreview"
               />
@@ -269,8 +270,8 @@ const copyPreview = async () => {
       </template>
       <template #footer="{ close }">
         <div class="flex w-full justify-end gap-2">
-          <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
-          <UButton label="Create link" color="primary" :disabled="!linkValid" @click="createLink" />
+          <UButton :label="t('campaign.cancel')" color="neutral" variant="ghost" @click="close" />
+          <UButton :label="t('campaign.createLink')" color="primary" :disabled="!linkValid" @click="createLink" />
         </div>
       </template>
     </UModal>

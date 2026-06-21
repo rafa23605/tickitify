@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ openTab: [tab: string] }>()
 
+const t = useT()
 const toast = useToast()
 const orders = useOrders()
 const campaignList = useCampaigns()
@@ -16,13 +17,13 @@ const campaignList = useCampaigns()
 /* ——— tiles ——— */
 const tiles = computed(() => [
   {
-    label: 'Tickets sold',
+    label: t('overview.tilesTicketsSold'),
     value: fmtN(EVENT_SALES_TOTALS.tickets),
-    sub: `of ${fmtN(EVENT_SALES_TOTALS.capacity)} capacity`,
+    sub: t('overview.tilesTicketsSub', { n: fmtN(EVENT_SALES_TOTALS.capacity) }),
     bar: (EVENT_SALES_TOTALS.tickets / EVENT_SALES_TOTALS.capacity) * 100
   },
-  { label: 'Revenue', value: `${fmtN(EVENT_SALES_TOTALS.revenue)} Kč`, sub: 'gross, before fees' },
-  { label: 'Event starts', value: 'in 9 days', sub: 'Sat 20 Jun · 19:00' }
+  { label: t('overview.tilesRevenue'), value: `${fmtN(EVENT_SALES_TOTALS.revenue)} Kč`, sub: t('overview.tilesRevenueSub') },
+  { label: t('overview.tilesStarts'), value: t('overview.tilesStartsValue'), sub: t('overview.tilesStartsSub') }
 ])
 
 /* ——— sales by ticket type ——— */
@@ -55,7 +56,7 @@ const openOrder = (email: string, consent: boolean) => {
 const storefrontUrl = computed(() => `ticketify.cz/cvf/${props.slug}`)
 const copyUrl = async () => {
   await navigator.clipboard.writeText(`https://${storefrontUrl.value}`)
-  toast.add({ title: 'Link copied', icon: 'i-lucide-clipboard-check', color: 'success' })
+  toast.add({ title: t('overview.copiedToast'), icon: 'i-lucide-clipboard-check', color: 'success' })
 }
 
 /* ——— cancel event (doc: triggers bulk refunds for all sold tickets) ——— */
@@ -63,8 +64,8 @@ const cancelModal = ref(false)
 const confirmCancel = () => {
   cancelModal.value = false
   toast.add({
-    title: 'Event cancelled',
-    description: `${fmtN(EVENT_SALES_TOTALS.tickets)} tickets are being refunded automatically. Buyers get a cancellation email with the refund amount.`,
+    title: t('overview.cancelledToastTitle'),
+    description: t('overview.cancelledToastDesc', { n: fmtN(EVENT_SALES_TOTALS.tickets) }),
     icon: 'i-lucide-calendar-x',
     color: 'warning'
   })
@@ -90,7 +91,7 @@ const confirmCancel = () => {
       <!-- left column -->
       <div class="flex flex-col gap-6 min-w-0">
         <!-- sales by ticket type -->
-        <UPageCard variant="outline" title="Sales by ticket type" description="How each tier is selling against its allocation.">
+        <UPageCard variant="outline" :title="t('overview.salesByTypeTitle')" :description="t('overview.salesByTypeDesc')">
           <div class="flex flex-col gap-4 mt-3">
             <div v-for="t in typeSales" :key="t.name">
               <div class="flex items-center justify-between gap-3 text-sm">
@@ -112,11 +113,11 @@ const confirmCancel = () => {
         <UPageCard variant="outline">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="text-base font-semibold text-highlighted">Recent orders</p>
-              <p class="text-[15px] text-muted mt-1">The last five — click one to find it in Sales.</p>
+              <p class="text-base font-semibold text-highlighted">{{ t('overview.recentTitle') }}</p>
+              <p class="text-[15px] text-muted mt-1">{{ t('overview.recentDesc') }}</p>
             </div>
             <UButton
-              label="Open Sales"
+              :label="t('overview.openSales')"
               trailing-icon="i-lucide-arrow-right"
               color="neutral"
               variant="ghost"
@@ -143,23 +144,23 @@ const confirmCancel = () => {
         <!-- editing rules while on sale (Flow 3 in the PoC doc) -->
         <UPageCard
           variant="outline"
-          title="Editing while on sale"
-          description="Until the event starts — Sat 20 Jun · 19:00 — some things stay flexible, the rest locked at publishing."
+          :title="t('overview.editingTitle')"
+          :description="t('overview.editingDesc')"
         >
           <div class="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-3">
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">Still editable</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">{{ t('overview.stillEditable') }}</p>
               <ul class="flex flex-col gap-2 text-sm text-default">
-                <li v-for="item in ['Change prices on existing types', 'Increase standing capacity']" :key="item" class="flex gap-2.5">
+                <li v-for="item in [t('overview.editChangePrices'), t('overview.editIncreaseStanding')]" :key="item" class="flex gap-2.5">
                   <UIcon name="i-lucide-circle-plus" class="size-4 shrink-0 text-success mt-0.5" />
                   {{ item }}
                 </li>
               </ul>
             </div>
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">Locked since publishing</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">{{ t('overview.lockedSince') }}</p>
               <ul class="flex flex-col gap-2 text-sm text-muted">
-                <li v-for="item in ['Title, description & cover', 'Event dates', 'Type names & existing assignments', 'Capacity decreases']" :key="item" class="flex gap-2.5">
+                <li v-for="item in [t('overview.lockTitleDescCover'), t('overview.lockEventDates'), t('overview.lockTypeNames'), t('overview.lockCapacityDecreases')]" :key="item" class="flex gap-2.5">
                   <UIcon name="i-lucide-lock" class="size-4 shrink-0 text-dimmed mt-0.5" />
                   {{ item }}
                 </li>
@@ -171,10 +172,10 @@ const confirmCancel = () => {
 
           <div class="flex flex-wrap items-center justify-between gap-3">
             <p class="text-xs text-dimmed">
-              Need a locked change? Cancel the event below or contact the Tickitify team.
+              {{ t('overview.needLockedChange') }}
             </p>
             <UButton
-              label="Edit event"
+              :label="t('overview.editEvent')"
               icon="i-lucide-pencil"
               color="neutral"
               variant="subtle"
@@ -187,13 +188,13 @@ const confirmCancel = () => {
         <UPageCard variant="outline" :ui="{ root: 'ring-error/30' }">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p class="text-base font-semibold text-highlighted">Cancel event</p>
+              <p class="text-base font-semibold text-highlighted">{{ t('overview.cancelTitle') }}</p>
               <p class="text-[15px] text-muted mt-1">
-                Stops sales and automatically refunds every sold ticket. This can't be undone.
+                {{ t('overview.cancelDesc') }}
               </p>
             </div>
             <UButton
-              label="Cancel event"
+              :label="t('overview.cancelButton')"
               icon="i-lucide-calendar-x"
               color="error"
               variant="subtle"
@@ -212,37 +213,37 @@ const confirmCancel = () => {
               <p class="font-semibold text-highlighted">{{ title }}</p>
               <p class="flex items-center gap-1.5 text-sm text-muted mt-1">
                 <UIcon name="i-lucide-map-pin" class="size-3.5 shrink-0" />
-                Královka Arena · Praha
+                {{ t('overview.venueLine') }}
               </p>
               <p class="flex items-center gap-1.5 text-sm text-muted mt-0.5">
                 <UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />
-                Sat 20 Jun · 19:00–22:00
+                {{ t('overview.dateLine') }}
               </p>
             </div>
             <USeparator />
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-1.5">Storefront link</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-1.5">{{ t('overview.storefrontLink') }}</p>
               <UFieldGroup class="w-full">
                 <UInput :model-value="storefrontUrl" readonly class="flex-1" size="sm" />
-                <UButton icon="i-lucide-copy" color="neutral" variant="subtle" size="sm" aria-label="Copy link" @click="copyUrl" />
+                <UButton icon="i-lucide-copy" color="neutral" variant="subtle" size="sm" :aria-label="t('overview.copyLinkAria')" @click="copyUrl" />
               </UFieldGroup>
             </div>
           </div>
         </UPageCard>
 
         <!-- top campaign insight -->
-        <UPageCard v-if="topCampaign" variant="outline" title="Best-selling campaign">
+        <UPageCard v-if="topCampaign" variant="outline" :title="t('overview.bestCampaign')">
           <div class="flex items-center justify-between gap-3 mt-2">
             <div class="min-w-0">
               <p class="font-medium text-highlighted truncate">{{ topCampaign.name }}</p>
               <p class="text-sm text-muted mt-0.5 tabular-nums">
-                {{ fmtN(topCampaign.purchased) }} purchases · {{ topCampaign.share }} of attributed sales
+                {{ t('overview.campaignStats', { n: fmtN(topCampaign.purchased), share: topCampaign.share }) }}
               </p>
             </div>
             <UIcon name="i-lucide-trophy" class="size-5 shrink-0 text-amber-400" />
           </div>
           <UButton
-            label="Open Marketing"
+            :label="t('overview.openMarketing')"
             trailing-icon="i-lucide-arrow-right"
             color="neutral"
             variant="ghost"
@@ -257,30 +258,30 @@ const confirmCancel = () => {
     <!-- ════ cancel confirmation ════ -->
     <UModal
       v-model:open="cancelModal"
-      :title="`Cancel ${title}?`"
-      description="This stops sales immediately and can't be undone."
+      :title="t('overview.modalTitle', { title })"
+      :description="t('overview.modalDesc')"
     >
       <template #body>
         <ul class="flex flex-col gap-2.5 text-sm text-default">
           <li class="flex gap-2.5">
             <UIcon name="i-lucide-undo-2" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            All {{ fmtN(EVENT_SALES_TOTALS.tickets) }} sold tickets are refunded automatically via Stripe.
+            {{ t('overview.modalRefundAll', { n: fmtN(EVENT_SALES_TOTALS.tickets) }) }}
           </li>
           <li class="flex gap-2.5">
             <UIcon name="i-lucide-mail" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            Every buyer gets a cancellation email with their refund amount.
+            {{ t('overview.modalBuyerEmail') }}
           </li>
           <li class="flex gap-2.5">
             <UIcon name="i-lucide-eye-off" class="size-4 shrink-0 text-dimmed mt-0.5" />
-            The event disappears from your storefront; the pending payout is reduced to zero.
+            {{ t('overview.modalDisappears') }}
           </li>
         </ul>
       </template>
       <template #footer="{ close }">
         <div class="flex w-full justify-end gap-2">
-          <UButton label="Keep selling" color="neutral" variant="ghost" @click="close" />
+          <UButton :label="t('overview.keepSelling')" color="neutral" variant="ghost" @click="close" />
           <UButton
-            :label="`Cancel & refund ${fmtN(EVENT_SALES_TOTALS.tickets)} tickets`"
+            :label="t('overview.cancelAndRefund', { n: fmtN(EVENT_SALES_TOTALS.tickets) })"
             icon="i-lucide-calendar-x"
             color="error"
             @click="confirmCancel"

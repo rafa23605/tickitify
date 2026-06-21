@@ -1,33 +1,35 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
 
-useHead({ title: 'Accept invitation · Tickitify' })
+const t = useT()
+
+useHead({ title: `${t('invite.docTitle')} · Tickitify` })
 
 const toast = useToast()
 
 /** prototype-only switch: valid invite vs the 7-day token having expired */
 const demoState = ref<'valid' | 'expired'>('valid')
 
-const fields = [
-  { name: 'password', type: 'password' as const, label: 'Password', placeholder: 'At least 8 characters', required: true },
-  { name: 'confirm', type: 'password' as const, label: 'Confirm password', placeholder: 'Repeat it', required: true }
-]
+const fields = computed(() => [
+  { name: 'password', type: 'password' as const, label: t('invite.fieldPasswordLabel'), placeholder: t('invite.fieldPasswordPlaceholder'), required: true },
+  { name: 'confirm', type: 'password' as const, label: t('invite.fieldConfirmLabel'), placeholder: t('invite.fieldConfirmPlaceholder'), required: true }
+])
 
 const validate = (state: any): FormError[] => {
   const errors: FormError[] = []
   if (state.password && state.password.length < 8) {
-    errors.push({ name: 'password', message: 'Use at least 8 characters.' })
+    errors.push({ name: 'password', message: t('invite.errorPasswordLength') })
   }
   if (state.confirm && state.confirm !== state.password) {
-    errors.push({ name: 'confirm', message: 'Passwords don\'t match.' })
+    errors.push({ name: 'confirm', message: t('invite.errorPasswordMismatch') })
   }
   return errors
 }
 
 const onSubmit = () => {
   toast.add({
-    title: 'Welcome aboard',
-    description: 'Account created — set up payouts before publishing your first event.',
+    title: t('invite.toastWelcomeTitle'),
+    description: t('invite.toastWelcomeDescription'),
     icon: 'i-lucide-party-popper',
     color: 'success'
   })
@@ -35,7 +37,7 @@ const onSubmit = () => {
 }
 
 const requestNew = () => {
-  toast.add({ title: 'Request sent', description: 'The Tickitify team will send a fresh invitation to ondrej.novak@cvf.cz.', icon: 'i-lucide-mail', color: 'info' })
+  toast.add({ title: t('invite.toastRequestTitle'), description: t('invite.toastRequestDescription'), icon: 'i-lucide-mail', color: 'info' })
 }
 </script>
 
@@ -45,11 +47,11 @@ const requestNew = () => {
     <UAuthForm
       v-if="demoState === 'valid'"
       icon="i-lucide-mail-open"
-      title="You're invited"
-      description="Set a password to start managing events for your organization."
+      :title="t('invite.validTitle')"
+      :description="t('invite.validDescription')"
       :fields="fields"
       :validate="validate"
-      :submit="{ label: 'Set password & continue', color: 'primary', block: true }"
+      :submit="{ label: t('invite.submitLabel'), color: 'primary', block: true }"
       @submit="onSubmit"
     >
       <template #leading>
@@ -63,8 +65,8 @@ const requestNew = () => {
       </template>
       <template #footer>
         <p class="text-xs text-dimmed text-center">
-          Invitation links are valid for 7 days. By continuing you accept the
-          <ULink to="/settings?tab=account" class="text-primary">Data Processing Agreement</ULink>.
+          {{ t('invite.footerText') }}
+          <ULink to="/settings?tab=account" class="text-primary">{{ t('invite.footerLink') }}</ULink>.
         </p>
       </template>
     </UAuthForm>
@@ -73,17 +75,17 @@ const requestNew = () => {
     <UEmpty
       v-else
       icon="i-lucide-clock-alert"
-      title="This invitation has expired"
-      description="Invite links are valid for 7 days. Ask the Tickitify team to send a new one to ondrej.novak@cvf.cz."
+      :title="t('invite.expiredTitle')"
+      :description="t('invite.expiredDescription')"
       :actions="[
-        { label: 'Request a new invite', icon: 'i-lucide-mail', color: 'primary' as const, onClick: requestNew },
-        { label: 'Back to sign in', color: 'neutral' as const, variant: 'subtle' as const, to: '/login' }
+        { label: t('invite.expiredActionRequest'), icon: 'i-lucide-mail', color: 'primary' as const, onClick: requestNew },
+        { label: t('invite.expiredActionBack'), color: 'neutral' as const, variant: 'subtle' as const, to: '/login' }
       ]"
       class="py-6"
     />
 
     <template #foot>
-      Accounts are created by the Tickitify team — there is no public sign-up.
+      {{ t('invite.footNote') }}
     </template>
   </AuthShell>
 
@@ -91,13 +93,13 @@ const requestNew = () => {
   <div class="fixed bottom-5 right-5 z-50">
     <UFieldGroup size="sm" class="shadow-lg">
       <UButton
-        label="Valid invite"
+        :label="t('invite.switcherValid')"
         color="neutral"
         :variant="demoState === 'valid' ? 'solid' : 'outline'"
         @click="demoState = 'valid'"
       />
       <UButton
-        label="Expired link"
+        :label="t('invite.switcherExpired')"
         color="neutral"
         :variant="demoState === 'expired' ? 'solid' : 'outline'"
         @click="demoState = 'expired'"

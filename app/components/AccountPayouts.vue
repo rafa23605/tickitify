@@ -8,67 +8,69 @@ import type { UpcomingPayout, PayoutTransfer } from '~/utils/payouts'
 
 const UBadge = resolveComponent('UBadge')
 
+const t = useT()
+
 const tiles = computed(() => [
   {
-    label: 'Pending balance',
+    label: t('payouts.pendingLabel'),
     value: fmtKc(PENDING_TOTAL),
-    sub: `${UPCOMING_PAYOUTS.length} events on sale`
+    sub: t('payouts.pendingSub', { n: UPCOMING_PAYOUTS.length })
   },
   {
-    label: 'Next payout',
+    label: t('payouts.nextLabel'),
     value: NEXT_PAYOUT,
-    sub: `${fmtKc(THIS_WEEK_TOTAL)} this week`
+    sub: t('payouts.nextSub', { kc: fmtKc(THIS_WEEK_TOTAL) })
   },
   {
-    label: 'Paid out to date',
+    label: t('payouts.paidLabel'),
     value: fmtKc(PAID_TOTAL),
-    sub: `${PAYOUT_HISTORY.length} weekly transfers · last ${PAYOUT_HISTORY[0]!.dateLabel}`
+    sub: t('payouts.paidSub', { n: PAYOUT_HISTORY.length, date: PAYOUT_HISTORY[0]!.dateLabel })
   }
 ])
 
-const upcomingColumns: TableColumn<UpcomingPayout>[] = [
+const upcomingColumns = computed<TableColumn<UpcomingPayout>[]>(() => [
   {
     accessorKey: 'event',
-    header: 'Event',
+    header: t('payouts.colEvent'),
     cell: ({ row }) => h('span', { class: 'font-medium text-highlighted' }, row.original.event)
   },
-  { accessorKey: 'onSaleLabel', header: 'Sale' },
+  { accessorKey: 'onSaleLabel', header: t('payouts.colSale') },
   {
     accessorKey: 'thisWeek',
-    header: 'This week',
+    header: t('payouts.colThisWeek'),
     cell: ({ row }) => h('span', { class: 'block tabular-nums font-medium text-default' }, fmtKc(row.original.thisWeek))
   },
   {
     accessorKey: 'net',
-    header: 'Pending balance',
+    header: t('payouts.colPending'),
     cell: ({ row }) => h('span', { class: 'block tabular-nums font-semibold text-highlighted' }, fmtKc(row.original.net))
   },
   {
     id: 'status',
-    header: 'Status',
-    cell: () => h(UBadge, { label: `Next payout ${NEXT_PAYOUT}`, color: 'info', variant: 'subtle', size: 'sm', icon: 'i-lucide-calendar-clock' })
+    header: t('payouts.colStatus'),
+    cell: () => h(UBadge, { label: t('payouts.nextPayoutBadge', { date: NEXT_PAYOUT }), color: 'info', variant: 'subtle', size: 'sm', icon: 'i-lucide-calendar-clock' })
   }
-]
+])
 
-const historyColumns: TableColumn<PayoutTransfer>[] = [
+const historyColumns = computed<TableColumn<PayoutTransfer>[]>(() => [
   {
     accessorKey: 'id',
-    header: 'Transfer',
+    header: t('payouts.colTransfer'),
     cell: ({ row }) => h('span', { class: 'font-medium text-highlighted tabular-nums' }, row.original.id)
   },
-  { accessorKey: 'dateLabel', header: 'Sent' },
-  { accessorKey: 'event', header: 'Event' },
+  { accessorKey: 'dateLabel', header: t('payouts.colSent') },
+  { accessorKey: 'event', header: t('payouts.colEventHistory') },
   {
     accessorKey: 'amount',
-    header: 'Amount',
+    header: t('payouts.colAmount'),
     cell: ({ row }) => h('span', { class: 'block tabular-nums font-semibold text-highlighted' }, fmtKc(row.original.amount))
   },
   {
     id: 'status',
-    header: 'Status',
-    cell: ({ row }) => h(UBadge, { label: `Paid · arrived ${row.original.arrivedLabel}`, color: 'success', variant: 'subtle', size: 'sm' })
+    header: t('payouts.colStatus'),
+    cell: ({ row }) => h(UBadge, { label: t('payouts.paidBadge', { date: row.original.arrivedLabel }), color: 'success', variant: 'subtle', size: 'sm' })
   }
-]
+])
 </script>
 
 <template>
@@ -87,15 +89,15 @@ const historyColumns: TableColumn<PayoutTransfer>[] = [
       color="info"
       variant="subtle"
       icon="i-lucide-calendar-clock"
-      title="Weekly automatic payouts"
-      description="Payouts run automatically every week while your event is on sale — use ticket revenue as it comes in."
+      :title="t('payouts.alertTitle')"
+      :description="t('payouts.alertDesc')"
     />
 
     <!-- upcoming payouts -->
     <UPageCard
       variant="outline"
-      title="Upcoming payouts"
-      :description="`What each event on sale is accruing for ${BANK_ACCOUNT.bank} ${BANK_ACCOUNT.masked.slice(-4)} — paid out with the weekly run on ${NEXT_PAYOUT}.`"
+      :title="t('payouts.upcomingTitle')"
+      :description="t('payouts.upcomingDesc', { bank: BANK_ACCOUNT.bank, last4: BANK_ACCOUNT.masked.slice(-4), date: NEXT_PAYOUT })"
     >
       <UTable
         :data="UPCOMING_PAYOUTS"
@@ -108,8 +110,8 @@ const historyColumns: TableColumn<PayoutTransfer>[] = [
     <!-- payout history -->
     <UPageCard
       variant="outline"
-      title="Payout history"
-      description="Every weekly transfer we've sent you, with its Stripe status."
+      :title="t('payouts.historyTitle')"
+      :description="t('payouts.historyDesc')"
     >
       <UTable
         :data="PAYOUT_HISTORY"

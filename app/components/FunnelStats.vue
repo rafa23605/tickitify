@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { fmtN, pct } from '~/utils/campaignAnalytics'
 
+const t = useT()
+
 const props = defineProps<{
   viewed: number
   initiated: number
@@ -9,24 +11,24 @@ const props = defineProps<{
 
 const steps = computed(() => [
   {
-    label: 'Viewed',
+    label: t('funnel.viewed'),
     value: props.viewed,
-    sub: 'unique visitors',
+    sub: t('funnel.viewedSub'),
     badge: null as string | null,
     bar: 100
   },
   {
-    label: 'Initiated checkout',
+    label: t('funnel.initiated'),
     value: props.initiated,
-    sub: 'started buying',
-    badge: pct(props.initiated, props.viewed) + ' of viewed',
+    sub: t('funnel.initiatedSub'),
+    badge: t('funnel.ofViewed', { p: pct(props.initiated, props.viewed) }),
     bar: props.viewed ? (props.initiated / props.viewed) * 100 : 0
   },
   {
-    label: 'Purchased',
+    label: t('funnel.purchased'),
     value: props.purchased,
-    sub: pct(props.purchased, props.viewed) + ' of viewed',
-    badge: pct(props.purchased, props.initiated) + ' of initiated',
+    sub: t('funnel.ofViewed', { p: pct(props.purchased, props.viewed) }),
+    badge: t('funnel.ofInitiated', { p: pct(props.purchased, props.initiated) }),
     bar: props.viewed ? (props.purchased / props.viewed) * 100 : 0
   }
 ])

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-useHead({ title: 'Events · Tickitify' })
+const t = useT()
+useHead({ title: () => `${t('events.title')} · Tickitify` })
 
 /** Prototype-only switch between the two screen states */
 const demoState = ref<'season' | 'empty'>('season')
@@ -17,11 +18,11 @@ const counts = computed(() => ({
 }))
 
 const tabItems = computed(() => [
-  { label: 'All', value: 'all', badge: counts.value.all },
-  { label: 'Published', value: 'published', badge: counts.value.published },
-  { label: 'Drafts', value: 'drafts', badge: counts.value.drafts },
-  { label: 'Completed', value: 'completed', badge: counts.value.completed },
-  { label: 'Cancelled', value: 'cancelled', badge: counts.value.cancelled }
+  { label: t('events.tabs.all'), value: 'all', badge: counts.value.all },
+  { label: t('events.tabs.published'), value: 'published', badge: counts.value.published },
+  { label: t('events.tabs.drafts'), value: 'drafts', badge: counts.value.drafts },
+  { label: t('events.tabs.completed'), value: 'completed', badge: counts.value.completed },
+  { label: t('events.tabs.cancelled'), value: 'cancelled', badge: counts.value.cancelled }
 ])
 
 const visible = computed(() => {
@@ -34,17 +35,16 @@ const visible = computed(() => {
   }
 })
 
-const emptyActions = [
-  { label: 'Create your first event', icon: 'i-lucide-plus', size: 'lg' as const, to: '/events/new' }
-]
+const emptyActions = computed(() => [
+  { label: t('events.createFirst'), icon: 'i-lucide-plus', size: 'lg' as const, to: '/events/new' }
+])
 
-const wizardSteps = [
-  { title: 'Details', description: 'Title, dates and cover', icon: 'i-lucide-file-text' },
-  { title: 'Venue', description: 'Hall, seating and standing sectors', icon: 'i-lucide-building-2' },
-  { title: 'Ticket types', description: 'Price tiers — VIP, Standard', icon: 'i-lucide-tags' },
-  { title: 'Seats', description: 'Assign types on the seat map', icon: 'i-lucide-armchair' },
-  { title: 'Publish', description: 'Preflight check, go live', icon: 'i-lucide-rocket' }
-]
+const wizardSteps = computed(() => [
+  { title: t('events.steps.detailsT'), description: t('events.steps.detailsD'), icon: 'i-lucide-file-text' },
+  { title: t('events.steps.typesT'), description: t('events.steps.typesD'), icon: 'i-lucide-tags' },
+  { title: t('events.steps.seatsT'), description: t('events.steps.seatsD'), icon: 'i-lucide-armchair' },
+  { title: t('events.steps.publishT'), description: t('events.steps.publishD'), icon: 'i-lucide-rocket' }
+])
 </script>
 
 <template>
@@ -55,10 +55,10 @@ const wizardSteps = [
       <!-- ════ STATE A · active season ════ -->
       <main v-if="demoState === 'season'">
         <UPageHeader
-          headline="Czech Volleyball Federation"
-          title="Events"
-          description="This week: 2 events"
-          :links="[{ label: 'New event', icon: 'i-lucide-plus', color: 'primary', variant: 'solid', to: '/events/new' }]"
+          :headline="t('common.federation')"
+          :title="t('events.title')"
+          :description="t('events.thisWeek', { n: 2 })"
+          :links="[{ label: t('events.newEvent'), icon: 'i-lucide-plus', color: 'primary', variant: 'solid', to: '/events/new' }]"
           :ui="{ root: 'border-none py-8' }"
         />
 
@@ -79,16 +79,16 @@ const wizardSteps = [
       <!-- ════ STATE B · first login, no events ════ -->
       <main v-else>
         <UPageHeader
-          headline="Czech Volleyball Federation"
-          title="Events"
+          :headline="t('common.federation')"
+          :title="t('events.title')"
           :ui="{ root: 'border-none py-8' }"
         />
 
         <UPageCard variant="outline" :ui="{ container: 'py-12' }">
           <UEmpty
             icon="i-lucide-calendar-plus"
-            title="No events yet"
-            description="Create your first event, assign seats and prices, and publish when you're ready — buyers get a clean mobile checkout from minute one."
+            :title="t('events.emptyTitle')"
+            :description="t('events.emptyDesc')"
             size="lg"
             :actions="emptyActions"
           />
@@ -96,8 +96,8 @@ const wizardSteps = [
 
         <UPageCard
           variant="subtle"
-          title="From draft to on-sale in five steps"
-          description="You can save a draft at any point and come back later."
+          :title="t('events.stepsTitle')"
+          :description="t('events.stepsDesc')"
           class="mt-6"
         >
           <UStepper
@@ -110,9 +110,9 @@ const wizardSteps = [
 
           <USeparator class="mt-6 mb-4" />
           <p class="text-xs text-muted">
-            Publishing requires payout setup —
-            <ULink to="/settings" class="text-primary">connect Stripe</ULink>
-            anytime before going live.
+            {{ t('events.payoutNotePre') }}
+            <ULink to="/settings" class="text-primary">{{ t('events.connectStripe') }}</ULink>
+            {{ t('events.payoutNotePost') }}
           </p>
         </UPageCard>
       </main>
@@ -122,13 +122,13 @@ const wizardSteps = [
     <div class="fixed bottom-5 right-5 z-50">
       <UFieldGroup size="sm" class="shadow-lg">
         <UButton
-          label="First login"
+          :label="t('events.demoFirst')"
           color="neutral"
           :variant="demoState === 'empty' ? 'solid' : 'outline'"
           @click="demoState = 'empty'"
         />
         <UButton
-          label="Active season"
+          :label="t('events.demoActive')"
           color="neutral"
           :variant="demoState === 'season' ? 'solid' : 'outline'"
           @click="demoState = 'season'"
