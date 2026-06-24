@@ -15,7 +15,7 @@ const t = useT()
         </NuxtLink>
         <span class="flex-1" />
         <LangSwitcher />
-        <UButton :to="`/s/${org}/login`" color="neutral" variant="ghost" icon="i-lucide-circle-user-round" size="sm" square :aria-label="t('store.account')" />
+        <UButton :to="`/s/${org}/login`" color="neutral" variant="ghost" icon="i-lucide-circle-user-round" size="sm" square :aria-label="t('store.myAccount')" />
         <UButton to="/" color="neutral" variant="ghost" icon="i-lucide-layout-dashboard" size="xs" label="Admin" aria-label="Admin" />
       </div>
     </header>
