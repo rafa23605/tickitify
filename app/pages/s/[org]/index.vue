@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'storefront' })
 
 const route = useRoute()
+const t = useT()
 const org = computed(() => String(route.params.org))
 
 useHead({ title: () => `${ORGANIZER.name} · Tickitify` })
@@ -24,14 +25,14 @@ useHead({ title: () => `${ORGANIZER.name} · Tickitify` })
           <UIcon name="i-lucide-map-pin" class="size-4 shrink-0 text-dimmed" />
           {{ ORGANIZER.city }}, {{ ORGANIZER.country }}
         </span>
-        <UBadge :label="`${ORGANIZER.eventsCount} události`" color="neutral" variant="subtle" size="sm" />
+        <UBadge :label="t('store.organizer.eventsCount', { n: ORGANIZER.eventsCount })" color="neutral" variant="subtle" size="sm" />
       </div>
       <p class="text-sm text-toned mt-3 leading-relaxed">{{ ORGANIZER.bio }}</p>
     </section>
 
     <!-- upcoming events -->
     <section class="px-4 pt-6">
-      <h2 class="text-base font-semibold text-highlighted">Nadcházející události</h2>
+      <h2 class="text-base font-semibold text-highlighted">{{ t('store.organizer.upcoming') }}</h2>
       <UPageCard variant="outline" class="mt-3 overflow-hidden" :ui="{ container: 'p-0 sm:p-0' }">
         <div class="divide-y divide-default">
         <NuxtLink
@@ -42,7 +43,7 @@ useHead({ title: () => `${ORGANIZER.name} · Tickitify` })
         >
           <div class="flex items-center gap-2">
             <p class="font-semibold text-highlighted truncate">{{ ev.title }}</p>
-            <UBadge v-if="i === 0" label="Nejbližší" color="primary" variant="subtle" size="sm" class="shrink-0" />
+            <UBadge v-if="i === 0" :label="t('store.organizer.nearest')" color="primary" variant="subtle" size="sm" class="shrink-0" />
           </div>
           <p class="flex items-center gap-1.5 text-sm text-muted mt-1">
             <UIcon name="i-lucide-calendar-days" class="size-3.5 shrink-0 text-dimmed" />
@@ -53,8 +54,8 @@ useHead({ title: () => `${ORGANIZER.name} · Tickitify` })
             {{ ev.venue }} · {{ ev.city }}
           </p>
           <div class="flex items-center justify-between mt-2">
-            <span class="text-sm font-semibold text-highlighted tabular-nums">od {{ fmtCzk(ev.priceFrom) }}</span>
-            <span class="flex items-center gap-1 text-sm text-primary font-medium">Koupit <UIcon name="i-lucide-chevron-right" class="size-4" /></span>
+            <span class="text-sm font-semibold text-highlighted tabular-nums">{{ t('store.event.from') }} {{ fmtCzk(ev.priceFrom) }}</span>
+            <span class="flex items-center gap-1 text-sm text-primary font-medium">{{ t('store.organizer.buy') }} <UIcon name="i-lucide-chevron-right" class="size-4" /></span>
           </div>
         </NuxtLink>
         </div>
