@@ -24,6 +24,14 @@ const accountItems = computed(() => [
 
     <template #right>
       <div class="flex items-center gap-1.5">
+        <UButton
+          to="/s/cvf/vnl-cze-pol"
+          color="neutral"
+          variant="subtle"
+          icon="i-lucide-store"
+          label="Obchod"
+          size="sm"
+        />
         <LangSwitcher />
 
         <UDropdownMenu :items="accountItems" :content="{ align: 'end' }" :ui="{ content: 'w-52' }">

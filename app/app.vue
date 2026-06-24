@@ -8,6 +8,8 @@ const locale = computed(() => (lang.value === 'cs' ? cs : en))
 
 <template>
   <UApp :locale="locale">
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </UApp>
 </template>
