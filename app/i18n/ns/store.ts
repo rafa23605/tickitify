@@ -3,7 +3,7 @@
 export default {
   en: {
     store: {
-      account: 'My account',
+      myAccount: 'My account',
       back: 'Back',
       event: {
         about: 'About the event', readMore: 'Read more', organizer: 'Organizer',
@@ -55,7 +55,7 @@ export default {
   },
   cs: {
     store: {
-      account: 'Můj účet',
+      myAccount: 'Můj účet',
       back: 'Zpět',
       event: {
         about: 'O události', readMore: 'Číst více', organizer: 'Pořadatel',
