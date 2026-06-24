@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'storefront' })
 
 const route = useRoute()
+const t = useT()
 const org = computed(() => String(route.params.org))
 const slug = computed(() => String(route.params.event))
 
@@ -27,7 +28,7 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
       <p class="text-[15px] text-toned mt-1.5">{{ event.subtitle }}</p>
     </section>
 
-    <!-- session: clear full date -->
+    <!-- session -->
     <section class="px-4 pt-5">
       <UPageCard variant="outline" :ui="{ container: 'p-4 sm:p-4' }">
         <div class="flex flex-col gap-2">
@@ -45,9 +46,9 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
 
     <!-- about -->
     <section class="px-4 pt-6">
-      <h2 class="text-base font-semibold text-highlighted">O události</h2>
+      <h2 class="text-base font-semibold text-highlighted">{{ t('store.event.about') }}</h2>
       <p class="text-sm text-toned mt-2 leading-relaxed" :class="{ 'line-clamp-4': !showFullDesc }">{{ event.description }}</p>
-      <UButton v-if="!showFullDesc" variant="link" color="primary" class="px-0 mt-1" label="Číst více" @click="showFullDesc = true" />
+      <UButton v-if="!showFullDesc" variant="link" color="primary" class="px-0 mt-1" :label="t('store.event.readMore')" @click="showFullDesc = true" />
 
       <div class="flex flex-col gap-2.5 mt-4 text-sm">
         <p class="flex items-center gap-2 text-muted">
@@ -62,7 +63,7 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
 
     <!-- organizer -->
     <section class="px-4 pt-6">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">Pořadatel</p>
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">{{ t('store.event.organizer') }}</p>
       <UPageCard :to="organizerLink" variant="outline" :ui="{ container: 'p-3 sm:p-3' }">
         <div class="flex items-center gap-3">
           <UAvatar :text="event.organizer.avatar" />
@@ -79,10 +80,10 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
     <div class="fixed bottom-0 inset-x-0 z-40 border-t border-default bg-default/90 backdrop-blur">
       <div class="mx-auto max-w-md px-4 py-3 flex items-center gap-3">
         <div class="shrink-0">
-          <p class="text-[11px] text-muted leading-none">od</p>
+          <p class="text-[11px] text-muted leading-none">{{ t('store.event.from') }}</p>
           <p class="text-base font-bold text-highlighted tabular-nums mt-0.5">{{ fmtCzk(from) }}</p>
         </div>
-        <UButton :to="selectLink" class="flex-1 justify-center" size="lg" color="primary" label="Koupit vstupenky" />
+        <UButton :to="selectLink" class="flex-1 justify-center" size="lg" color="primary" :label="t('store.event.buy')" />
       </div>
     </div>
   </div>
@@ -90,7 +91,7 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
   <!-- event not available -->
   <div v-else class="px-6 py-24 text-center">
     <UIcon name="i-lucide-ticket-x" class="size-10 text-dimmed mx-auto" />
-    <h1 class="text-lg font-semibold text-highlighted mt-4">Událost není dostupná</h1>
-    <p class="text-sm text-muted mt-1">Tato událost neexistuje nebo už není v prodeji.</p>
+    <h1 class="text-lg font-semibold text-highlighted mt-4">{{ t('store.event.naTitle') }}</h1>
+    <p class="text-sm text-muted mt-1">{{ t('store.event.naDesc') }}</p>
   </div>
 </template>

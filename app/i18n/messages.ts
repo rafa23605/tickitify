@@ -17,6 +17,7 @@ import account from './ns/account'
 import invite from './ns/invite'
 import forgot from './ns/forgot'
 import reset from './ns/reset'
+import store from './ns/store'
 
 export type Lang = 'cs' | 'en'
 type Dict = Record<string, any>
@@ -133,7 +134,7 @@ const cs: Dict = {
 // own top-level key(s) under the matching language and is merged in here.
 const nsPacks = [
   sales, workspace, campaign, wizard, edit, payouts, preview,
-  overview, funnel, settings, account, invite, forgot, reset
+  overview, funnel, settings, account, invite, forgot, reset, store
 ]
 for (const pack of nsPacks) {
   Object.assign(en, pack.en)
