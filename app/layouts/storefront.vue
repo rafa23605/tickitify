@@ -7,9 +7,9 @@ const t = useT()
 </script>
 
 <template>
-  <div class="min-h-screen bg-muted">
+  <div class="min-h-screen bg-default">
     <header class="sticky top-0 z-40 bg-default/90 backdrop-blur border-b border-default">
-      <div class="mx-auto max-w-md px-4 h-14 flex items-center gap-1.5">
+      <div class="mx-auto max-w-md lg:max-w-6xl px-4 h-14 flex items-center gap-1.5">
         <NuxtLink :to="`/s/${org}`" aria-label="Tickitify" class="shrink-0">
           <img :src="logoUrl" alt="Tickitify" class="h-[18px] w-auto">
         </NuxtLink>
@@ -20,7 +20,7 @@ const t = useT()
       </div>
     </header>
 
-    <main class="mx-auto max-w-md bg-default min-h-screen">
+    <main class="bg-default min-h-screen">
       <slot />
     </main>
   </div>

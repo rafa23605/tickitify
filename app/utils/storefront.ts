@@ -77,6 +77,9 @@ export const SEAT_TIERS: SeatTier[] = [
 ]
 export const tierById = (id: string) => SEAT_TIERS.find(t => t.id === id)
 
+/** A single rendered seat in the arena (shared by the mobile /select page and the desktop event embed). */
+export interface SeatVM { key: string, taken: boolean, tierId: string, price: number, dot: string, label: string }
+
 /** A stand on one side of the court. N/S run along the top/bottom (wide), W/E down the sides (tall). */
 export interface Sector { id: string, name: string, tierId: string, side: 'N' | 'S' | 'W' | 'E', rows: number, cols: number }
 export const SECTORS: Sector[] = [

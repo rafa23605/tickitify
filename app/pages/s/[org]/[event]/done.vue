@@ -26,7 +26,7 @@ useHead({ title: () => `${t('store.done.confirmed')} · Tickitify` })
 
 <template>
   <!-- direct visit / no order -->
-  <div v-if="items.length === 0" class="px-6 py-24 text-center">
+  <div v-if="items.length === 0" class="mx-auto max-w-md px-6 py-24 text-center">
     <UIcon name="i-lucide-ticket-x" class="size-10 text-dimmed mx-auto" />
     <h1 class="text-lg font-semibold text-highlighted mt-4">{{ t('store.done.noTitle') }}</h1>
     <p class="text-sm text-muted mt-1">{{ t('store.done.noDesc') }}</p>
@@ -34,7 +34,7 @@ useHead({ title: () => `${t('store.done.confirmed')} · Tickitify` })
   </div>
 
   <!-- confirmation -->
-  <div v-else class="px-4 pt-10 pb-12">
+  <div v-else class="mx-auto max-w-md lg:max-w-xl px-4 pt-10 lg:pt-16 pb-12">
     <div class="text-center">
       <UIcon name="i-lucide-circle-check" class="size-12 text-success mx-auto" />
       <h1 class="text-xl font-bold text-highlighted mt-4">{{ t('store.done.confirmed') }}</h1>

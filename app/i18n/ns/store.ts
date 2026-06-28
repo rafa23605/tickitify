@@ -7,10 +7,11 @@ export default {
       back: 'Back',
       event: {
         about: 'About the event', readMore: 'Read more', organizer: 'Organizer',
-        buy: 'Buy tickets', from: 'from',
+        buy: 'Buy tickets', from: 'from', address: 'Address',
         naTitle: 'Event unavailable', naDesc: "This event doesn't exist or is no longer on sale."
       },
       select: {
+        title: 'Choose your seats',
         hint: 'Tap to choose seats. Grey = taken.', court: 'Court', clearFilter: 'Clear filter',
         continue: 'Continue', pcs: 'pcs', naTitle: 'Event unavailable'
       },
@@ -59,10 +60,11 @@ export default {
       back: 'Zpět',
       event: {
         about: 'O události', readMore: 'Číst více', organizer: 'Pořadatel',
-        buy: 'Koupit vstupenky', from: 'od',
+        buy: 'Koupit vstupenky', from: 'od', address: 'Adresa',
         naTitle: 'Událost není dostupná', naDesc: 'Tato událost neexistuje nebo už není v prodeji.'
       },
       select: {
+        title: 'Výběr míst',
         hint: 'Vyberte místa klepnutím. Šedá = obsazeno.', court: 'Kurt', clearFilter: 'Zrušit filtr',
         continue: 'Pokračovat', pcs: 'ks', naTitle: 'Událost není dostupná'
       },

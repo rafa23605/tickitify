@@ -40,14 +40,14 @@ useHead({ title: () => (event.value ? `${t('store.checkout.title')} · ${event.v
 
 <template>
   <!-- empty cart -->
-  <div v-if="items.length === 0" class="px-6 py-24 text-center">
+  <div v-if="items.length === 0" class="mx-auto max-w-md px-6 py-24 text-center">
     <UIcon name="i-lucide-shopping-cart" class="size-10 text-dimmed mx-auto" />
     <h1 class="text-lg font-semibold text-highlighted mt-4">{{ t('store.checkout.emptyTitle') }}</h1>
     <p class="text-sm text-muted mt-1">{{ t('store.checkout.emptyDesc') }}</p>
     <UButton :to="eventLink" class="mt-5" color="primary" :label="t('store.checkout.backToEvent')" />
   </div>
 
-  <div v-else-if="event" class="pb-24">
+  <div v-else-if="event" class="mx-auto max-w-md lg:max-w-2xl pb-24">
     <!-- back row -->
     <div class="px-4 pt-4">
       <NuxtLink :to="selectLink" class="inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-highlighted transition-colors">
@@ -99,12 +99,14 @@ useHead({ title: () => (event.value ? `${t('store.checkout.title')} · ${event.v
     <section class="px-4 pt-6">
       <h2 class="text-base font-semibold text-highlighted">{{ t('store.checkout.buyer') }}</h2>
       <div class="flex flex-col gap-4 mt-3">
-        <UFormField :label="t('store.checkout.firstName')" required>
-          <UInput v-model="buyer.firstName" class="w-full" placeholder="Jan" autocomplete="given-name" />
-        </UFormField>
-        <UFormField :label="t('store.checkout.lastName')" required>
-          <UInput v-model="buyer.lastName" class="w-full" placeholder="Novák" autocomplete="family-name" />
-        </UFormField>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <UFormField :label="t('store.checkout.firstName')" required>
+            <UInput v-model="buyer.firstName" class="w-full" placeholder="Jan" autocomplete="given-name" />
+          </UFormField>
+          <UFormField :label="t('store.checkout.lastName')" required>
+            <UInput v-model="buyer.lastName" class="w-full" placeholder="Novák" autocomplete="family-name" />
+          </UFormField>
+        </div>
         <UFormField :label="t('store.checkout.email')" required :error="buyer.email && !emailValid ? t('store.checkout.emailErr') : undefined">
           <UInput v-model="buyer.email" type="email" class="w-full" placeholder="jan@email.cz" autocomplete="email" />
         </UFormField>
@@ -122,7 +124,7 @@ useHead({ title: () => (event.value ? `${t('store.checkout.title')} · ${event.v
 
     <!-- sticky pay bar -->
     <div class="fixed bottom-0 inset-x-0 z-40 border-t border-default bg-default/90 backdrop-blur">
-      <div class="mx-auto max-w-md px-4 py-3">
+      <div class="mx-auto max-w-md lg:max-w-2xl px-4 py-3">
         <UButton
           block
           size="lg"

@@ -50,7 +50,7 @@ useHead({ title: () => `${t('store.account.modalTitle')} · Tickitify` })
 </script>
 
 <template>
-  <div class="px-4 py-6 pb-10">
+  <div class="mx-auto max-w-3xl px-4 py-6 pb-10">
     <!-- profile header -->
     <div class="flex items-center gap-3">
       <UAvatar :text="user.avatar" size="xl" />
@@ -65,7 +65,7 @@ useHead({ title: () => `${t('store.account.modalTitle')} · Tickitify` })
       <h2 class="text-base font-semibold text-highlighted">{{ t('store.account.tickets') }}</h2>
       <UTabs v-model="ticketTab" :items="ticketTabs" :content="false" color="primary" variant="pill" size="sm" class="mt-3" />
 
-      <div class="flex flex-col gap-3 mt-4">
+      <div class="grid gap-3 mt-4 sm:grid-cols-2">
         <UPageCard v-for="o in visibleOrders" :key="o.id" variant="outline" :ui="{ container: 'p-4 sm:p-4' }">
           <p class="text-sm font-semibold text-highlighted">{{ o.eventTitle }}</p>
           <p class="text-xs text-muted mt-0.5">{{ o.dateFull }} · {{ o.time }} · {{ o.venue }}</p>
@@ -85,7 +85,7 @@ useHead({ title: () => `${t('store.account.modalTitle')} · Tickitify` })
           </div>
         </UPageCard>
 
-        <UPageCard v-if="!visibleOrders.length" variant="subtle" :ui="{ container: 'py-8 sm:py-8' }">
+        <UPageCard v-if="!visibleOrders.length" variant="subtle" class="sm:col-span-2" :ui="{ container: 'py-8 sm:py-8' }">
           <p class="text-sm text-muted text-center">{{ ticketTab === 'upcoming' ? t('store.account.emptyUpcoming') : t('store.account.emptyPast') }}</p>
         </UPageCard>
       </div>
