@@ -43,14 +43,21 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
             <h1 class="text-2xl lg:text-5xl font-bold text-highlighted leading-tight">{{ event.title }}</h1>
             <p class="text-[15px] lg:text-xl text-toned mt-1.5 lg:mt-3">{{ event.subtitle }}</p>
 
-            <div class="hidden lg:flex flex-wrap items-center gap-x-6 gap-y-2 mt-5 text-sm text-muted">
+            <!-- organizer up top (desktop) — like Afisha's venue/organizer line in the hero -->
+            <NuxtLink :to="organizerLink" class="hidden lg:inline-flex items-center gap-2 mt-5 w-fit group">
+              <UAvatar :text="event.organizer.avatar" size="xs" />
+              <span class="text-sm font-medium text-toned group-hover:text-highlighted transition-colors">{{ event.organizer.name }}</span>
+              <UIcon name="i-lucide-chevron-right" class="size-3.5 text-dimmed" />
+            </NuxtLink>
+
+            <div class="hidden lg:flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-sm text-muted">
               <span class="flex items-center gap-2"><UIcon name="i-lucide-calendar-days" class="size-4 text-dimmed" />{{ event.dateFull }} · {{ event.time }}</span>
               <span class="flex items-center gap-2"><UIcon name="i-lucide-map-pin" class="size-4 text-dimmed" />{{ event.venue }} · {{ event.city }}</span>
               <span class="flex items-center gap-2"><UIcon name="i-lucide-clock" class="size-4 text-dimmed" />{{ event.durationLabel }}</span>
             </div>
           </div>
 
-          <!-- desktop price + CTA -->
+          <!-- price + CTA (desktop, right) -->
           <div class="hidden lg:flex flex-col items-end gap-3 shrink-0">
             <div class="text-right">
               <p class="text-xs text-muted leading-none">{{ t('store.event.from') }}</p>
@@ -95,9 +102,9 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
       </UPageCard>
     </section>
 
-    <!-- about + address -->
-    <section class="mx-auto max-w-6xl px-4 pt-6 lg:py-12 lg:grid lg:grid-cols-2 lg:gap-12">
-      <div>
+    <!-- about, then address — single column -->
+    <section class="mx-auto max-w-6xl px-4 pt-6 lg:pt-12">
+      <div class="lg:max-w-4xl">
         <h2 class="text-base lg:text-lg font-semibold text-highlighted">{{ t('store.event.about') }}</h2>
         <p class="text-sm lg:text-[15px] text-toned mt-2 leading-relaxed" :class="{ 'line-clamp-4 lg:line-clamp-none': !showFullDesc }">{{ event.description }}</p>
         <UButton v-if="!showFullDesc" variant="link" color="primary" class="px-0 mt-1 lg:hidden" :label="t('store.event.readMore')" @click="showFullDesc = true" />
@@ -106,18 +113,18 @@ useHead({ title: () => (event.value ? `${event.value.title} · Tickitify` : 'Tic
         </div>
       </div>
 
-      <div class="mt-6 lg:mt-0">
+      <div class="mt-8 lg:mt-10 lg:max-w-4xl">
         <h2 class="text-base lg:text-lg font-semibold text-highlighted">{{ t('store.event.address') }}</h2>
         <p class="text-sm text-toned mt-2">{{ event.venue }}</p>
         <p class="text-sm text-muted">{{ event.address }}</p>
-        <div class="mt-4 aspect-[16/10] lg:aspect-[16/9] rounded-xl ring ring-default bg-muted flex items-center justify-center">
+        <div class="mt-4 aspect-[16/10] lg:aspect-[16/7] rounded-xl ring ring-default bg-muted flex items-center justify-center">
           <span class="flex items-center gap-2 text-sm text-dimmed"><UIcon name="i-lucide-map" class="size-5" /> {{ event.city }}</span>
         </div>
       </div>
     </section>
 
-    <!-- organizer -->
-    <section class="mx-auto max-w-6xl px-4 pt-6 lg:pb-8">
+    <!-- organizer card — mobile only (on desktop the organizer is up in the hero) -->
+    <section class="mx-auto max-w-6xl px-4 pt-6 lg:hidden">
       <p class="text-[11px] font-semibold uppercase tracking-wide text-muted mb-2">{{ t('store.event.organizer') }}</p>
       <UPageCard :to="organizerLink" variant="outline" class="lg:max-w-md" :ui="{ container: 'p-3 sm:p-3' }">
         <div class="flex items-center gap-3">
